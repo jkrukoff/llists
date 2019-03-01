@@ -1,0 +1,12 @@
+{application, llists,
+ [{pkg_name, "llists"},
+  {description, "A library for creating and working with lazy lists."},
+  {vsn, "0.1.0"},
+  {applications, [kernel,
+                  stdlib]},
+  {modules, [llists]},
+  {registered, []},
+  {env, []},
+  {licenses, ["Apache 2.0"]},
+  {links, [{"GitHub", "https://github.com/jkrukoff/llists"}]},
+  {extra, [{maintainers, ["John Krukoff"]}]}]}.
