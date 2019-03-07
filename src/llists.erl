@@ -43,6 +43,7 @@
          join/2,
          map/2,
          merge/1,
+         merge/2,
          merge/3,
          merge3/3,
          nthtail/2,
@@ -52,6 +53,12 @@
          sublist/3,
          takewhile/2,
          partition/2,
+         split/2,
+         splitwith/2,
+         subtract/2,
+         umerge/1,
+         umerge/2,
+         umerge/3,
          % Iterator evaluation.
          next/1,
          to_list/1,
@@ -69,7 +76,13 @@
          max/1,
          member/2,
          min/1,
-         nth/2]).
+         nth/2,
+         prefix/2,
+         sort/1,
+         sort/2,
+         search/2,
+         suffix/2,
+         sum/1]).
 
 -export_type([next/1,
               iterator/1,
@@ -473,12 +486,25 @@ map(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %% `IteratorOfIterators' is picked before the other element.
 %%
 %% All iterators are fully evaluated during merge, infinite iterators
-%% will not return.
+%% will never return.
 %% @end
 -spec merge(IteratorOfIterators :: iterator(iterator())) -> iterator().
 merge(#iterator{} = IteratorOfIterators) ->
     ListOfIterators = to_list(IteratorOfIterators),
     Merged = lists:merge([to_list(I) || I <- ListOfIterators]),
+    from_list(Merged).
+
+%% @doc
+%% Returns the sorted iterator formed by merging `Iterator1' and
+%% `Iterator2'. Both `Iterator1' and `Iterator2' must be sorted before
+%% evaluating this function.  When two elements compare equal, the
+%% element from `Iterator1' is picked before the element from
+%% `Iterator2'.
+%% @end
+-spec merge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
+    iterator(A | B).
+merge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
+    Merged = lists:merge(to_list(Iterator1), to_list(Iterator2)),
     from_list(Merged).
 
 %% @doc
@@ -491,7 +517,7 @@ merge(#iterator{} = IteratorOfIterators) ->
 %% before the element from `Iterator2'.
 %%
 %% All iterators are fully evaluated during merge, infinite iterators
-%% will not return.
+%% will never return.
 %% @end
 -spec merge(Fun :: fun((A, B) -> boolean()), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
@@ -509,7 +535,7 @@ merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% `Iterator3'.
 %%
 %% All iterators are fully evaluated during merge, infinite iterators
-%% will not return.
+%% will never return.
 %% @end
 -spec merge3(Iterator1 :: iterator(A),
              Iterator2 :: iterator(B),
@@ -535,7 +561,7 @@ nthtail(N, #iterator{} = Iterator) when is_integer(N), N >= 0 ->
 %% Returns an iterator with the elements in `Iterator' in reverse
 %% order.
 %%
-%% The iterator will be fully evaluated, infinite iterators will not
+%% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
 -spec reverse(Iterator :: iterator(A)) -> iterator(A).
@@ -553,7 +579,7 @@ reverse(#iterator{} = Iterator) ->
 %% '''
 %%
 %% The iterator `Iterator' will be fully evaluated, infinite iterators
-%% will not return.
+%% will never return.
 %% @end
 -spec reverse(Iterator :: iterator(A),
               Tail :: iterator(B)) -> iterator(A | B).
@@ -638,6 +664,129 @@ partition(Pred, #iterator{} = Iterator) ->
     NotSatisfying = filter(fun (Elem) -> not Pred(Elem) end, Iterator),
     {Satisfying, NotSatisfying}.
 
+%% @doc
+%% Splits `Iterator1' into `Iterator2' and `Iterator3'. `Iterator2'
+%% contains the first `N' elements and `Iterator3' the remaining
+%% elements (the `N'th tail).
+%%
+%% Evaluates the first `N' elements of `Iterator1' to construct
+%% `Iterator3'.
+%% @end
+-spec split(N :: non_neg_integer(), Iterator1 :: iterator(Elem)) ->
+    {Iterator2 :: iterator(Elem), Iterator3 :: iterator(Elem)}.
+split(N, #iterator{} = Iterator) when is_integer(N), N >= 0 ->
+    {sublist(Iterator, N), nthtail(N, Iterator)}.
+
+%% @doc
+%% Partitions `Iterator' into two iterators according to `Pred'.
+%% `splitwith/2' behaves as if it is defined as follows:
+%%
+%% ```
+%% llists:splitwith(Pred, Iterator) ->
+%%     {llists:takewhile(Pred, Iterator),
+%%      llists:dropwhile(Pred, Iterator)}.
+%% '''
+%%
+%% Examples:
+%% ```
+%% > {Before, After} = llists:splitwith(fun(A) -> A rem 2 == 1 end, llists:seq(1, 7)),
+%% > {llists:to_list(Before), llists:to_list(After)}.
+%% {[1],[2,3,4,5,6,7]}
+%% > {Before, After} = lists:splitwith(fun(A) -> is_atom(A) end, [a,b,1,c,d,2,3,4,e]),
+%% > {llists:to_list(Before), llists:to_list(After)}.
+%% {[a,b],[1,c,d,2,3,4,e]}
+%% '''
+%%
+%% For a different way to partition an iterator, see partition/2.
+%%
+%% Evaluates the elements of `Iterator' for which `Pred(Elem)' returns
+%% `false'. If `Pred' never returns `false', infinite iterators will
+%% not return.
+%% @end
+%% @see partition/2
+-spec splitwith(Pred :: predicate(Elem), Iterator :: iterator(Elem)) ->
+    {Iterator1 :: iterator(Elem), Iterator2 :: iterator(Elem)}.
+splitwith(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
+    {takewhile(Pred, Iterator), dropwhile(Pred, Iterator)}.
+
+%% @doc
+%% Returns a new iterator `Iterator3' that is a copy of `Iterator1',
+%% subjected to the following procedure: for each element in
+%% `Iterator2', its first occurrence in `Iterator1' is deleted.
+%%
+%% Example:
+%% ```
+%% > lists:subtract("123212", "212").
+%% "312".
+%% '''
+%%
+%% `Iterator2' is fully evaluated, infinite iterators will never return.
+%% @end
+-spec subtract(Iterator1 :: iterator(Elem), Iterator2 :: iterator()) ->
+    iterator(Elem).
+subtract(#iterator{} = Base, #iterator{} = RemoveIterator) ->
+    unfold(fun Next({[], _Remove}) ->
+                   none;
+               Next({[Elem | #iterator{} = BaseIterator], Remove}) ->
+                   case drop(Elem, Remove) of
+                       none ->
+                           {Elem, {next(BaseIterator), Remove}};
+                       {dropped, NewRemove} ->
+                           Next({next(BaseIterator), NewRemove})
+                   end
+           end,
+           {next(Base), to_list(RemoveIterator)}).
+
+%% @doc
+%% Returns the sorted iterator formed by merging all the subiterators of
+%% `IteratorOfIterators'. All subiterators must be sorted and contain no duplicates
+%% before evaluating this function. When two elements compare equal,
+%% the element from the subiterator with the lowest position in
+%% `IteratorOfIterators' is picked and the other is deleted.
+%%
+%% All iterators are fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec umerge(IteratorOfIterators :: iterator(iterator())) -> iterator().
+umerge(#iterator{} = IteratorOfIterators) ->
+    ListOfIterators = to_list(IteratorOfIterators),
+    Merged = lists:umerge([to_list(I) || I <- ListOfIterators]),
+    from_list(Merged).
+
+%% @doc
+%% Returns the sorted iterator formed by merging `Iterator1' and
+%% `Iterator2'. Both `Iterator1' and `Iterator2' must be sorted and
+%% contain no duplicates before evaluating this function. When two
+%% elements compare equal, the element from `Iterator1' is picked and
+%% the one from `Iterator2' is deleted.
+%%
+%% Both iterators are fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec umerge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
+    iterator(A | B).
+umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
+    Merged = lists:umerge(to_list(Iterator1), to_list(Iterator2)),
+    from_list(Merged).
+
+%% @doc
+%% Returns the sorted iterator formed by merging `Iterator1' and
+%% `Iterator2'. Both `Iterator1' and `Iterator2' must be sorted
+%% according to the ordering function `Fun' and contain no duplicates
+%% before evaluating this function. `Fun(A, B)' is to return `true' if
+%% `A' compares less than or equal to `B' in the ordering, otherwise
+%% `false'. When two elements compare equal, the element from
+%% `Iterator1' is picked and the one from `Iterator2' is deleted.
+%%
+%% Both iterators are fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec umerge(Fun :: fun((A, B) -> boolean()), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
+    iterator(A | B).
+umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
+    Merged = lists:umerge(Fun, to_list(Iterator1), to_list(Iterator2)),
+    from_list(Merged).
+
 %%%===================================================================
 %%% API - Iterator Evaluation
 %%%===================================================================
@@ -704,7 +853,7 @@ tl(#iterator{} = Iterator) ->
 %% when `Iterator' is empty.
 %% @end
 -spec all(Pred :: predicate(Elem), Iterator :: iterator(Elem)) -> boolean().
-all(Pred, #iterator{} = Iterator) ->
+all(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     all_loop(Pred, next(Iterator)).
 
 %% @doc
@@ -715,7 +864,7 @@ all(Pred, #iterator{} = Iterator) ->
 %% when `Iterator' is empty.
 %% @end
 -spec any(predicate(Elem), iterator(Elem)) -> boolean().
-any(Pred, #iterator{} = Iterator) ->
+any(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     any_loop(Pred, next(Iterator)).
 
 %% @doc
@@ -770,7 +919,7 @@ foreach(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %% @doc
 %% Returns the last element in `Iterator'.
 %% 
-%% The iterator will be fully evaluated, infinite iterators will not
+%% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
 -spec last(iterator(Elem)) -> Elem.
@@ -904,6 +1053,74 @@ nth(N, #iterator{} = Iterator) when N > 0 ->
             Elem
     end.
 
+%% @doc
+%% Returns `true' if `Iterator1' is a prefix of `Iterator2', otherwise `false'.
+%%
+%% Both iterators will be evaluated until the point they diverge. If
+%% both iterators are identical and infinite, will never return.
+%% @end
+-spec prefix(Iterator1 :: iterator(), Iterator2 :: iterator()) -> boolean().
+prefix(#iterator{} = Prefix, #iterator{} = Iterator) ->
+    prefix_loop(next(Prefix), next(Iterator)).
+
+%% @doc
+%% Returns an iterator containing the sorted elements of `Iterator1'.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec sort(Iterator1 :: iterator(Elem)) -> Iterator2 :: iterator(Elem).
+sort(#iterator{} = Iterator) ->
+    list_wrap(fun lists:sort/1, Iterator).
+
+%% @doc
+%% Returns an iterator containing the sorted elements of `Iterator1',
+%% according to the ordering function `Fun'. `Fun(A, B)' is to return
+%% `true' if `A' compares less than or equal to `B' in the ordering,
+%% otherwise `false'.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec sort(Fun :: fun((A, A) -> boolean()), Iterator1 :: iterator(A)) ->
+    Iterator2 :: iterator(A).
+sort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
+    list_wrap(fun (I) -> lists:sort(Fun, I) end, Iterator).
+
+%% @doc
+%% If there is a `Value' in `Iterator' such that `Pred(Value)' returns `true',
+%% returns `{value, Value}' for the first such `Value', otherwise returns
+%% `false'.
+%%
+%% The iterator is evaluated until a match is found. If no match is
+%% ever found, infinite iterators will never return.
+%% @end
+-spec search(Pred :: predicate(Value), Iterator :: iterator()) ->
+    {value, Value} | false.
+search(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
+    search_loop(Pred, next(Iterator)).
+
+%% @doc
+%% Returns `true' if `Iterator1' is a suffix of `Iterator2', otherwise
+%% `false'.
+%%
+%% Both `Iterator1' and `Iterator2' are fully evaluated, infinite
+%% iterators will never return.
+%% @end
+-spec suffix(Iterator1 :: iterator(), Iterator2 :: iterator()) -> boolean().
+suffix(#iterator{} = Suffix, #iterator{} = Iterator) ->
+    prefix(reverse(Suffix), reverse(Iterator)).
+
+%% @doc
+%% Returns the sum of the elements in `Iterator'.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec sum(Iterator :: iterator(number())) -> number().
+sum(#iterator{} = Iterator) ->
+    foldl(fun (Elem, Acc) -> Elem + Acc end, 0, Iterator).
+
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
@@ -914,6 +1131,14 @@ new(Next) ->
 
 list_wrap(ListFun, Iterator) ->
     llists:from_list(ListFun(llists:to_list(Iterator))).
+
+drop(Elem, List) ->
+    case lists:member(Elem, List) of
+        true ->
+            {dropped, List -- [Elem]};
+        false ->
+            none
+    end.
 
 nthtail_loop(0, #iterator{} = Iterator) ->
     Iterator;
@@ -927,7 +1152,7 @@ to_list_loop([]) ->
 to_list_loop([Head | #iterator{} = Iterator]) ->
     [Head | to_list_loop(next(Iterator))].
 
-all_loop(Pred, []) when is_function(Pred, 1) ->
+all_loop(_Pred, []) ->
     true;
 all_loop(Pred, [Head | #iterator{} = Iterator]) ->
     case Pred(Head) of
@@ -937,7 +1162,7 @@ all_loop(Pred, [Head | #iterator{} = Iterator]) ->
             false
     end.
 
-any_loop(Pred, []) when is_function(Pred, 1) ->
+any_loop(_Pred, []) ->
     false;
 any_loop(Pred, [Head | #iterator{} = Iterator]) ->
     case Pred(Head) of
@@ -957,3 +1182,24 @@ foreach_loop(_Fun, []) ->
 foreach_loop(Fun, [Elem | #iterator{} = Iterator]) ->
     _ = Fun(Elem),
     foreach_loop(Fun, next(Iterator)).
+
+prefix_loop([], _) ->
+    true;
+prefix_loop(_, []) ->
+    % If first iterator is longer.
+    false;
+prefix_loop([Elem | #iterator{} = Iterator1], [Elem | #iterator{} = Iterator2]) ->
+    prefix_loop(next(Iterator1), next(Iterator2));
+prefix_loop([_Elem1 | #iterator{}], [_Elem2 | #iterator{}]) ->
+    % If elements differ.
+    false.
+
+search_loop(_Pred, []) ->
+    false;
+search_loop(Pred, [Value | #iterator{} = Iterator]) ->
+    case Pred(Value) of
+        true ->
+            {value, Value};
+        false ->
+            search_loop(Pred, next(Iterator))
+    end.

@@ -175,6 +175,13 @@ merge_1_test() ->
                        [llists:from_list([1, 5]),
                         llists:from_list([2, 3, 4])])))).
 
+merge_2_test() ->
+    ?assertEqual([1, 2, 3, 4, 5],
+                 llists:to_list(
+                   llists:merge(
+                     llists:from_list([1, 5]),
+                     llists:from_list([2, 3, 4])))).
+
 merge_3_test() ->
     ?assertEqual([1, 2, 3, 4, 5],
                  llists:to_list(
@@ -270,6 +277,50 @@ partition_test() ->
     ?assertEqual({[a, b, c, d, e], [1, 2, 3, 4]},
                  {llists:to_list(S), llists:to_list(NS)}).
 
+split_test() ->
+    {Before, After} = llists:split(
+                        3,
+                        llists:from_list([1, 2, 3, 4, 5])),
+    ?assertEqual({[1, 2, 3], [4, 5]},
+                 {llists:to_list(Before), llists:to_list(After)}).
+
+splitwith_test() ->
+    {Before, After} = llists:splitwith(
+                        fun (Elem) -> Elem < 4 end,
+                        llists:from_list([1, 2, 3, 4, 5])),
+    ?assertEqual({[1, 2, 3], [4, 5]},
+                 {llists:to_list(Before), llists:to_list(After)}).
+
+subtract_test() ->
+    ?assertEqual([3, 1, 2],
+                 llists:to_list(
+                   llists:subtract(
+                     llists:from_list([1, 2, 3, 2, 1, 2]),
+                     llists:from_list([2, 1, 2])))).
+
+umerge_1_test() ->
+    ?assertEqual([1, 2, 3, 4, 5],
+                 llists:to_list(
+                   llists:umerge(
+                     llists:from_list(
+                       [llists:from_list([1, 2, 5]),
+                        llists:from_list([2, 3, 4])])))).
+
+umerge_2_test() ->
+    ?assertEqual([1, 2, 3, 4, 5],
+                 llists:to_list(
+                   llists:umerge(
+                     llists:from_list([1, 2, 5]),
+                     llists:from_list([2, 3, 4])))).
+
+umerge_3_test() ->
+    ?assertEqual([1, 2, 3, 4, 5],
+                 llists:to_list(
+                   llists:umerge(
+                     fun (A, B) -> A =< B end,
+                     llists:from_list([1, 2, 5]),
+                     llists:from_list([2, 3, 4])))).
+
 filtermap_test() ->
     ?assertEqual([1, 2],
                  llists:to_list(
@@ -356,3 +407,37 @@ nth_test_() ->
                    llists:nth(
                      4,
                      llists:from_list([1, 2, 3])))].
+
+prefix_test() ->
+    ?assert(llists:prefix(
+              llists:from_list([1, 2, 3]),
+              llists:from_list([1, 2, 3, 4, 5]))).
+
+sort_1_test() ->
+    ?assertEqual([1, 2, 3],
+                 llists:to_list(
+                   llists:sort(
+                     llists:from_list([3, 2, 1])))).
+
+sort_2_test() ->
+    ?assertEqual([1, 2, 3],
+                 llists:to_list(
+                   llists:sort(
+                     fun (A, B) -> A =< B end,
+                     llists:from_list([3, 2, 1])))).
+
+search_test() ->
+    ?assertEqual({value, 2},
+                 llists:search(
+                   fun (Elem) -> Elem == 2 end,
+                   llists:from_list([1, 2, 3]))).
+
+suffix_test() ->
+    ?assert(llists:suffix(
+              llists:from_list([d, e, f]),
+              llists:from_list([a, b, c, d, e, f]))).
+
+sum_test() ->
+    ?assertEqual(6,
+                 llists:sum(
+                   llists:from_list([1, 2, 3]))).
