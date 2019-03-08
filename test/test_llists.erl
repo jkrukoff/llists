@@ -161,6 +161,71 @@ join_test_() ->
                        x,
                        llists:from_list([]))))].
 
+keydelete_test() ->
+    ?assertEqual([one, {three, 3}],
+                 llists:to_list(
+                   llists:keydelete(
+                     two,
+                     1,
+                     llists:from_list([one, {two, 2}, {three, 3}])))).
+
+keymap_test() ->
+    ?assertEqual([{name, "jane", 22},{name, "lizzie", 20},{name, "lydia", 15}],
+                 llists:to_list(
+                   llists:keymap(
+                     fun erlang:atom_to_list/1,
+                     2,
+                     llists:from_list(
+                       [{name, jane, 22}, {name, lizzie, 20}, {name, lydia, 15}])))).
+
+keymerge_test() ->
+    ?assertEqual([{name, jane, 22},{name, lizzie, 20},{name, lydia, 15}],
+                 llists:to_list(
+                   llists:keymerge(
+                     2,
+                     llists:from_list([{name, jane, 22}]),
+                     llists:from_list([{name, lizzie, 20}, {name, lydia, 15}])))).
+
+keyreplace_test() ->
+    ?assertEqual([one, {replaced}, {three, 3}],
+                 llists:to_list(
+                   llists:keyreplace(
+                     two,
+                     1,
+                     llists:from_list([one, {two, 2}, {three, 3}]),
+                     {replaced}))).
+
+keysort_test() ->
+    ?assertEqual([{one, 1}, {two, 2}, {three, 3}],
+                 llists:to_list(
+                   llists:keysort(
+                     2,
+                     llists:from_list([{three, 3}, {two, 2}, {one, 1}])))).
+
+keystore_test_() ->
+    [?_assertEqual([one, {stored}, {three, 3}],
+                   llists:to_list(
+                     llists:keystore(
+                       two,
+                       1,
+                       llists:from_list([one, {two, 2}, {three, 3}]),
+                       {stored}))),
+     ?_assertEqual([one, {two, 2}, {three, 3}, {stored}],
+                   llists:to_list(
+                     llists:keystore(
+                       four,
+                       1,
+                       llists:from_list([one, {two, 2}, {three, 3}]),
+                       {stored})))].
+
+keytake_test() ->
+    {value, Value, Iterator} = llists:keytake(
+                                 two,
+                                 1,
+                                 llists:from_list([one, {two, 2}, {three, 3}])),
+    ?assertEqual({{two, 2}, [one, {three, 3}]},
+                 {Value, llists:to_list(Iterator)}).
+
 map_test() ->
     ?assertEqual([2, 4, 6],
                  llists:to_list(
@@ -263,6 +328,26 @@ foreach_test() ->
                    fun (A) -> A end,
                    llists:from_list([1, 2, 3]))).
 
+keyfind_test() ->
+    ?assertEqual({two, 2},
+                 llists:keyfind(
+                   two,
+                   1,
+                   llists:from_list([{one, 1}, {two, 2}, {three, 3}]))).
+
+keymember_test() ->
+    ?assert(llists:keymember(
+              two,
+              1,
+              llists:from_list([one, {two, 2}, {three, 3}]))).
+
+keysearch_test() ->
+    ?assertEqual({value, {two, 2}},
+                 llists:keysearch(
+                   two,
+                   1,
+                   llists:from_list([{one, 1}, {two, 2}, {three, 3}]))).
+
 takewhile_test() ->
     ?assertEqual([1, 2],
                  llists:to_list(
@@ -298,6 +383,22 @@ subtract_test() ->
                      llists:from_list([1, 2, 3, 2, 1, 2]),
                      llists:from_list([2, 1, 2])))).
 
+ukeymerge_test() ->
+    ?assertEqual([{name, jane, 22},{name, lizzie, 20},{name, lydia, 15}],
+                 llists:to_list(
+                   llists:ukeymerge(
+                     2,
+                     llists:from_list([{name, jane, 22}, {name, lizzie, 20}]),
+                     llists:from_list([{name, lizzie, 25}, {name, lydia, 15}])))).
+
+ukeysort_test() ->
+    ?assertEqual([{one, 1}, {two, 2}, {three, 3}],
+                 llists:to_list(
+                   llists:ukeysort(
+                     2,
+                     llists:from_list([{two, 2}, {three, 3}, {two, 2}, {one, 1}])))).
+
+
 umerge_1_test() ->
     ?assertEqual([1, 2, 3, 4, 5],
                  llists:to_list(
@@ -320,6 +421,97 @@ umerge_3_test() ->
                      fun (A, B) -> A =< B end,
                      llists:from_list([1, 2, 5]),
                      llists:from_list([2, 3, 4])))).
+
+umerge3_test() ->
+    ?assertEqual([1, 2, 3, 4, 5],
+                 llists:to_list(
+                   llists:umerge3(
+                     llists:from_list([1, 2, 5]),
+                     llists:from_list([2, 4]),
+                     llists:from_list([3, 4])))).
+
+unzip_test() ->
+    {First, Second} = llists:unzip(
+                        llists:from_list([{1, 4}, {2, 5}, {3, 6}])),
+    ?assertEqual({[1, 2, 3], [4, 5, 6]},
+                 {llists:to_list(First), llists:to_list(Second)}).
+
+unzip3_test() ->
+    {First, Second, Third} = llists:unzip3(
+                               llists:from_list([{1, 3, 5}, {2, 4, 6}])),
+    ?assertEqual({[1, 2], [3, 4], [5, 6]},
+                 {llists:to_list(First),
+                  llists:to_list(Second),
+                  llists:to_list(Third)}).
+
+usort_1_test() ->
+    ?assertEqual([1, 2, 3],
+                 llists:to_list(
+                   llists:usort(
+                     llists:from_list([3, 2, 2, 1])))).
+
+usort_2_test() ->
+    ?assertEqual([1, 2, 3],
+                 llists:to_list(
+                   llists:usort(
+                     fun (A, B) -> A =< B end,
+                     llists:from_list([3, 2, 2, 1])))).
+
+zip_test_() ->
+    [?_assertEqual([{1, 4}, {2, 5}, {3, 6}],
+                   llists:to_list(
+                     llists:zip(
+                       llists:from_list([1, 2, 3]),
+                       llists:from_list([4, 5, 6])))),
+     ?_assertError(function_clause,
+                   llists:to_list(
+                     llists:zip(
+                       llists:from_list([1, 2]),
+                       llists:from_list([4, 5, 6]))))].
+
+zip3_test_() ->
+    [?_assertEqual([{1, 3, 5}, {2, 4, 6}],
+                   llists:to_list(
+                     llists:zip3(
+                       llists:from_list([1, 2]),
+                       llists:from_list([3, 4]),
+                       llists:from_list([5, 6])))),
+     ?_assertError(function_clause,
+                   llists:to_list(
+                     llists:zip3(
+                       llists:from_list([1, 2]),
+                       llists:from_list([3]),
+                       llists:from_list([5, 6]))))].
+
+zipwith_test_() ->
+    [?_assertEqual([{1, 4}, {2, 5}, {3, 6}],
+                   llists:to_list(
+                     llists:zipwith(
+                       fun (A, B) -> {A, B} end,
+                       llists:from_list([1, 2, 3]),
+                       llists:from_list([4, 5, 6])))),
+     ?_assertError(function_clause,
+                   llists:to_list(
+                     llists:zipwith(
+                       fun (A, B) -> {A, B} end,
+                       llists:from_list([1, 2]),
+                       llists:from_list([4, 5, 6]))))].
+
+zipwith3_test_() ->
+    [?_assertEqual([{1, 3, 5}, {2, 4, 6}],
+                   llists:to_list(
+                     llists:zipwith3(
+                       fun (A, B, C) -> {A, B, C} end,
+                       llists:from_list([1, 2]),
+                       llists:from_list([3, 4]),
+                       llists:from_list([5, 6])))),
+     ?_assertError(function_clause,
+                   llists:to_list(
+                     llists:zipwith3(
+                       fun (A, B, C) -> {A, B, C} end,
+                       llists:from_list([1, 2]),
+                       llists:from_list([3]),
+                       llists:from_list([5, 6]))))].
 
 filtermap_test() ->
     ?assertEqual([1, 2],

@@ -11,6 +11,7 @@
 -type next(Over) :: fun((Acc :: accumulator()) -> {Elem :: Over, NewAcc :: accumulator()} | none).
 -type iterator() :: iterator(any()).
 -opaque iterator(Over) :: #iterator{next :: fun(() -> lazy_list(Over))}.
+-type tuple_iterator() :: iterator(tuple()).
 -type accumulator() :: any().
 % -type lazy_list() :: lazy_list(any()).
 -type lazy_list(Over) :: nonempty_improper_list(Over, iterator(Over)) | [].
@@ -18,6 +19,7 @@
 % -type predicate() :: predicate(any()).
 -type predicate(Elem) :: fun((Elem) -> boolean()).
 -type fold(Elem, AccIn, AccOut) :: fun((Elem, AccIn) -> AccOut).
+-type compare(A, B) :: fun((A, B) -> boolean()).
 
 %% API
 -export([% Iterator construction.
@@ -41,6 +43,13 @@
          flatten/1,
          flatten/2,
          join/2,
+         keydelete/3,
+         keymap/3,
+         keymerge/3,
+         keyreplace/4,
+         keysort/2,
+         keystore/4,
+         keytake/3,
          map/2,
          merge/1,
          merge/2,
@@ -56,9 +65,20 @@
          split/2,
          splitwith/2,
          subtract/2,
+         ukeymerge/3,
+         ukeysort/2,
          umerge/1,
          umerge/2,
          umerge/3,
+         umerge3/3,
+         unzip/1,
+         unzip3/1,
+         usort/1,
+         usort/2,
+         zip/2,
+         zip3/3,
+         zipwith/3,
+         zipwith3/4,
          % Iterator evaluation.
          next/1,
          to_list/1,
@@ -70,6 +90,9 @@
          foldl/3,
          foldr/3,
          foreach/2,
+         keyfind/3,
+         keymember/3,
+         keysearch/3,
          last/1,
          mapfoldl/3,
          mapfoldr/3,
@@ -248,9 +271,9 @@ concat(#iterator{} = Iterator) ->
 delete(Elem, #iterator{} = Iterator) ->
     new(fun () ->
                 case next(Iterator) of
-                    [Elem | NextIterator] ->
+                    [Elem | #iterator{} = NextIterator] ->
                         next(NextIterator);
-                    [Other | NextIterator] ->
+                    [Other | #iterator{} = NextIterator] ->
                         [Other | delete(Elem, NextIterator)];
                     [] ->
                         []
@@ -287,7 +310,7 @@ droplast(#iterator{} = Iterator) ->
 dropwhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     new(fun () ->
                 case next(Iterator) of
-                    [Elem | NextIterator] ->
+                    [Elem | #iterator{} = NextIterator] ->
                         case Pred(Elem) of
                             true ->
                                 next(dropwhile(Pred, NextIterator));
@@ -308,7 +331,7 @@ dropwhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 filter(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     new(fun () ->
                 case next(Iterator) of
-                    [Elem | NextIterator] ->
+                    [Elem | #iterator{} = NextIterator] ->
                         case Pred(Elem) of
                             true ->
                                 [Elem | filter(Pred, NextIterator)];
@@ -357,7 +380,7 @@ filter(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 filtermap(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     new(fun () ->
                 case next(Iterator) of
-                    [Elem | NextIterator] ->
+                    [Elem | #iterator{} = NextIterator] ->
                         case Fun(Elem) of
                             false ->
                                 next(filtermap(Fun, NextIterator));
@@ -464,6 +487,143 @@ join(Sep, #iterator{} = Iterator) ->
             next(Iterator)).
 
 %% @doc
+%% Returns a copy of `TupleIterator1' where the first occurrence of a tuple
+%% whose `N'th element compares equal to `Key' is deleted, if there is
+%% such a tuple.
+%% @end
+-spec keydelete(Key :: any(), N :: pos_integer(), TupleIterator1 :: iterator(Elem)) ->
+    TupleIterator2 :: iterator(Elem).
+keydelete(Key, N, #iterator{} = Iterator) when N > 0 ->
+    new(fun () ->
+                case next(Iterator) of
+                    [Elem | #iterator{} = NextIterator] when Key == element(N, Elem) ->
+                        next(NextIterator);
+                    [Elem | #iterator{} = NextIterator] ->
+                        [Elem | keydelete(Key, N, NextIterator)];
+                    [] ->
+                        []
+                end
+        end).
+
+%% @doc
+%% Returns an iterator of tuples where, for each tuple in
+%% `TupleIterator1', the `N'th element `Term1' of the tuple has been
+%% replaced with the result of calling `Fun(Term1)'.
+%%
+%% Examples:
+%% ```
+%% > Fun = fun(Atom) -> atom_to_list(Atom) end.
+%% #Fun<erl_eval.6.10732646>
+%% 2> llists:to_list(
+%% 2>  llists:keymap(
+%% 2>   Fun,
+%% 2>   2,
+%% 2>   llists:from_list([{name,jane,22},{name,lizzie,20},{name,lydia,15}]))).
+%% [{name,"jane",22},{name,"lizzie",20},{name,"lydia",15}]
+%% '''
+%% @end
+-spec keymap(Fun :: fun((Term1 :: any()) -> Term2 :: any()), N :: pos_integer(), TupleIterator1 :: tuple_iterator()) ->
+    TupleIterator2 :: tuple_iterator().
+keymap(Fun, N, #iterator{} = Iterator) when is_function(Fun, 1), N > 0 ->
+    map(fun (Tuple) ->
+                Modified = Fun(element(N, Tuple)),
+                setelement(N, Tuple, Modified)
+        end,
+        Iterator).
+
+%% @doc
+%% Returns the sorted iterator formed by merging `TupleIterator1' and
+%% `TupleIterator2'. The merge is performed on the `N'th element of
+%% each tuple. Both `TupleIterator1' and `TupleIterator2' must be
+%% key-sorted before evaluating this function. When two tuples compare
+%% equal, the tuple from `TupleIterator1' is picked before the tuple
+%% from `TupleIterator2'.
+%%
+%% Both iterators are fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec keymerge(N :: pos_integer(), TupleIterator1 :: tuple_iterator(), TupleIterator2 :: tuple_iterator()) ->
+    TupleIterator3 :: tuple_iterator().
+keymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) when N > 0 ->
+    Merged = lists:keymerge(N, to_list(Iterator1), to_list(Iterator2)),
+    from_list(Merged).
+
+%% @doc
+%% Returns a copy of `TupleIterator1' where the first occurrence of a T
+%% tuple whose `N'th element compares equal to `Key' is replaced with
+%% `NewTuple', if there is such a tuple `T'.
+%% @end
+-spec keyreplace(Key :: any, N :: pos_integer(), TupleIterator1 :: iterator(Elem), NewTuple :: tuple()) ->
+    TupleIterator2 :: iterator(Elem | tuple()).
+keyreplace(Key, N, #iterator{} = Iterator, NewTuple) when N > 0, is_tuple(NewTuple) ->
+    new(fun () ->
+                case next(Iterator) of
+                    [Elem | #iterator{} = NextIterator] when Key == element(N, Elem) ->
+                        [NewTuple | NextIterator];
+                    [Elem | #iterator{} = NextIterator] ->
+                        [Elem | keyreplace(Key, N, NextIterator, NewTuple)];
+                    [] ->
+                        []
+                end
+        end).
+
+%% @doc
+%% Returns an iterator containing the sorted elements of iterator
+%% `TupleIterator1'. Sorting is performed on the `N'th element of the
+%% tuples. The sort is stable.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec keysort(N :: pos_integer(), TupleIterator1 :: tuple_iterator()) ->
+    TupleIterator2 :: tuple_iterator().
+keysort(N, #iterator{} = Iterator) when N > 0 ->
+    list_wrap(fun (I) -> lists:keysort(N, I) end, Iterator).
+
+%% @doc
+%% Returns a copy of `TupleIterator1' where the first occurrence of a
+%% tuple `T' whose `N'th element compares equal to `Key' is replaced
+%% with `NewTuple', if there is such a tuple `T'. If there is no such
+%% tuple `T', a copy of `TupleIterator1' where `NewTuple' has been
+%% appended to the end is returned.
+%% @end
+-spec keystore(Key :: any(), N :: pos_integer(), TupleIterator1 :: iterator(Elem), NewTuple :: tuple()) ->
+    TupleIterator2 :: iterator(Elem | tuple()).
+keystore(Key, N, #iterator{} = Iterator, NewTuple) when
+      N > 0, is_tuple(NewTuple) ->
+    new(fun () ->
+                case next(Iterator) of
+                    [Elem | #iterator{} = NextIterator] when Key == element(N, Elem) ->
+                        [NewTuple | NextIterator];
+                    [Elem | #iterator{} = NextIterator] ->
+                        [Elem | keystore(Key, N, NextIterator, NewTuple)];
+                    [] ->
+                        [NewTuple | from_list([])]
+                end
+        end).
+
+%% @doc
+%% Searches the iterator of tuples `TupleIterator1' for a tuple whose
+%% `N'th element compares equal to `Key'. Returns
+%% `{value, Tuple, TupleIterator2}' if such a tuple is found,
+%% otherwise `false'.  `TupleIterator2' is a copy of `TupleIterator1'
+%% where the first occurrence of `Tuple' has been removed.
+%%
+%% Evaluates `TupleIterator1' until a match is found. Iterating over
+%% `TupleIterator2' will evaluate the same elements again. If no match
+%% is found, infinite iterators will never return.
+%% @end
+-spec keytake(Key :: any(), N :: pos_integer(), TupleIterator1 :: iterator(Elem)) ->
+    {value, Tuple :: tuple(), TupleIterator2 :: iterator(Elem)}.
+keytake(Key, N, #iterator{} = Iterator) when N > 0 ->
+    case keysearch(Key, N, Iterator) of
+        {value, Tuple} ->
+            {value, Tuple, keydelete(Key, N, Iterator)};
+        false ->
+            false
+    end.
+
+%% @doc
 %% Takes a function `Fun' from `A's to `B's, and an `Iterator' of `A's and produces an
 %% iterator of `B's by applying the function to every element in the iterator.
 %% @end
@@ -471,7 +631,7 @@ join(Sep, #iterator{} = Iterator) ->
 map(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     new(fun () ->
                 case next(Iterator) of
-                    [Elem | NextIterator] ->
+                    [Elem | #iterator{} = NextIterator] ->
                         [Fun(Elem) | map(Fun, NextIterator)];
                     [] ->
                         []
@@ -485,14 +645,12 @@ map(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %% element from the subiterator with the lowest position in
 %% `IteratorOfIterators' is picked before the other element.
 %%
-%% All iterators are fully evaluated during merge, infinite iterators
-%% will never return.
+%% `IteratorOfIterators' is fully evaluted before merge, an infinite
+%% iterator will never return.
 %% @end
 -spec merge(IteratorOfIterators :: iterator(iterator())) -> iterator().
 merge(#iterator{} = IteratorOfIterators) ->
-    ListOfIterators = to_list(IteratorOfIterators),
-    Merged = lists:merge([to_list(I) || I <- ListOfIterators]),
-    from_list(Merged).
+    fmerge(IteratorOfIterators).
 
 %% @doc
 %% Returns the sorted iterator formed by merging `Iterator1' and
@@ -504,8 +662,7 @@ merge(#iterator{} = IteratorOfIterators) ->
 -spec merge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
 merge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
-    Merged = lists:merge(to_list(Iterator1), to_list(Iterator2)),
-    from_list(Merged).
+    fmerge(from_list([Iterator1, Iterator2])).
 
 %% @doc
 %% Returns the sorted iterator formed by merging `Iterator1' and
@@ -515,11 +672,8 @@ merge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% or equal to `B' in the ordering, otherwise `false'. When two
 %% elements compare equal, the element from `Iterator1' is picked
 %% before the element from `Iterator2'.
-%%
-%% All iterators are fully evaluated during merge, infinite iterators
-%% will never return.
 %% @end
--spec merge(Fun :: fun((A, B) -> boolean()), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
+-spec merge(Fun :: compare(A, B), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
 merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     Merged = lists:merge(Fun, to_list(Iterator1), to_list(Iterator2)),
@@ -533,9 +687,6 @@ merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% is such an element, is picked before the other element, otherwise
 %% the element from `Iterator2' is picked before the element from
 %% `Iterator3'.
-%%
-%% All iterators are fully evaluated during merge, infinite iterators
-%% will never return.
 %% @end
 -spec merge3(Iterator1 :: iterator(A),
              Iterator2 :: iterator(B),
@@ -543,10 +694,7 @@ merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 merge3(#iterator{} = Iterator1,
        #iterator{} = Iterator2,
        #iterator{} = Iterator3) ->
-    Merged = lists:merge3(to_list(Iterator1),
-                          to_list(Iterator2),
-                          to_list(Iterator3)),
-    from_list(Merged).
+    fmerge(from_list([Iterator1, Iterator2, Iterator3])).
 
 %% @doc
 %% Returns the `N'th tail of `Iterator', that is, the subiterator of
@@ -596,7 +744,7 @@ sublist(#iterator{} = Iterator, Len) when is_integer(Len), Len >= 0->
                         [];
                     {_, []} ->
                         [];
-                    {Len, [Elem | NextIterator]} ->
+                    {Len, [Elem | #iterator{} = NextIterator]} ->
                         [Elem | sublist(NextIterator, Len - 1)]
                 end
         end).
@@ -627,7 +775,7 @@ sublist(#iterator{} = Iterator, Start, Len) when
 takewhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     new(fun () ->
                 case next(Iterator) of
-                    [Elem | NextIterator] ->
+                    [Elem | #iterator{} = NextIterator] ->
                         case Pred(Elem) of
                             true ->
                                 [Elem | takewhile(Pred, NextIterator)];
@@ -738,6 +886,37 @@ subtract(#iterator{} = Base, #iterator{} = RemoveIterator) ->
            {next(Base), to_list(RemoveIterator)}).
 
 %% @doc
+%% Returns the sorted iterator formed by merging `TupleIterator1' and
+%% `TupleIterator2'. The merge is performed on the `N'th element of each
+%% tuple. Both `TupleIterator1' and `TupleIterator2' must be key-sorted without
+%% duplicates before evaluating this function. When two tuples compare
+%% equal, the tuple from `TupleIterator1' is picked and the one from
+%% `TupleIterator2' is deleted.
+%%
+%% Both iterators are fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec ukeymerge(N :: pos_integer(), TupleIterator1 :: tuple_iterator(), TupleIterator2 :: tuple_iterator()) ->
+    TupleIterator3 :: tuple_iterator().
+ukeymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
+    Merged = lists:ukeymerge(N, to_list(Iterator1), to_list(Iterator2)),
+    from_list(Merged).
+
+%% @doc
+%% Returns a iterator containing the sorted elements of iterator
+%% `TupleIterator1' where all except the first tuple of the tuples
+%% comparing equal have been deleted. Sorting is performed on the
+%% `N'th element of the tuples.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec ukeysort(N :: pos_integer(), TupleIterator1 :: tuple_iterator()) ->
+    TupleIterator2 :: tuple_iterator().
+ukeysort(N, #iterator{} = Iterator) when N > 0 ->
+    list_wrap(fun (I) -> lists:ukeysort(N, I) end, Iterator).
+
+%% @doc
 %% Returns the sorted iterator formed by merging all the subiterators of
 %% `IteratorOfIterators'. All subiterators must be sorted and contain no duplicates
 %% before evaluating this function. When two elements compare equal,
@@ -781,11 +960,188 @@ umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% Both iterators are fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec umerge(Fun :: fun((A, B) -> boolean()), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
+-spec umerge(Fun :: compare(A, B), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
 umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     Merged = lists:umerge(Fun, to_list(Iterator1), to_list(Iterator2)),
     from_list(Merged).
+
+%% @doc
+%% Returns the sorted iterator formed by merging `Iterator1',
+%% `Iterator2', and `Iterator3'.  All of `Iterator1', `Iterator2', and
+%% `Iterator3' must be sorted and contain no duplicates before
+%% evaluating this function. When two elements compare equal, the
+%% element from `Iterator1' is picked if there is such an element,
+%% otherwise the element from `Iterator2' is picked, and the other is
+%% deleted.
+%% 
+%% All iterators are fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec umerge3(Iterator1 :: iterator(A),
+              Iterator2 :: iterator(B),
+              Iterator3 :: iterator(C)) -> iterator(A | B | C).
+umerge3(#iterator{} = Iterator1,
+        #iterator{} = Iterator2,
+        #iterator{} = Iterator3) ->
+    Merged = lists:umerge3(to_list(Iterator1),
+                           to_list(Iterator2),
+                           to_list(Iterator3)),
+    from_list(Merged).
+
+%% @doc
+%% "Unzips" a iterator of two-tuples into two iterators, where the
+%% first iterator contains the first element of each tuple, and the
+%% second iterator contains the second element of each tuple.
+%% @end
+-spec unzip(Iterator1 :: iterator({A, B})) -> 
+    {Iterator2 :: iterator(A), Iterator3 :: iterator(B)}.
+unzip(#iterator{} = Iterator) ->
+    {map(fun ({A, _}) -> A end, Iterator),
+     map(fun ({_, B}) -> B end, Iterator)}.
+
+%% @doc
+%% "Unzips" a iterator of three-tuples into three iterators, where the first
+%% iterator contains the first element of each tuple, the second iterator
+%% contains the second element of each tuple, and the third iterator
+%% contains the third element of each tuple.
+%% @end
+-spec unzip3(Iterator1 :: iterator({A, B, C})) -> 
+    {Iterator2 :: iterator(A), Iterator3 :: iterator(B), Iterator4 :: iterator(C)}.
+unzip3(#iterator{} = Iterator) ->
+    {map(fun ({A, _, _}) -> A end, Iterator),
+     map(fun ({_, B, _}) -> B end, Iterator),
+     map(fun ({_, _, C}) -> C end, Iterator)}.
+
+%% @doc
+%% Returns a iterator containing the sorted elements of `Iterator1'
+%% where all except the first element of the elements comparing equal
+%% have been deleted.
+%%
+%% The iterator will be fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec usort(Iterator1 :: iterator(Elem)) -> iterator(Elem).
+usort(#iterator{} = Iterator) ->
+    list_wrap(fun lists:usort/1, Iterator).
+
+%% @doc
+%% Returns a iterator containing the sorted elements of `Iterator1' where all
+%% except the first element of the elements comparing equal according
+%% to the ordering function `Fun' have been deleted. `Fun(A, B)' is to
+%% return `true' if `A' compares less than or equal to `B' in the ordering,
+%% otherwise `false'.
+%%
+%% The iterator will be fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec usort(Fun :: compare(A, A), Iterator1 :: iterator(A)) -> iterator(A).
+usort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
+    list_wrap(fun (I) -> lists:usort(Fun, I) end, Iterator).
+
+%% @doc
+%% "Zips" two iterators of equal length into one iterator of
+%% two-tuples, where the first element of each tuple is taken from the
+%% first iterator and the second element is taken from the
+%% corresponding element in the second iterator.
+%% @end
+-spec zip(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
+    Iterator3 :: iterator({A, B}).
+zip(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
+    zipwith(fun (A, B) -> {A, B} end, Iterator1, Iterator2).
+
+%% @doc
+%% "Zips" three iterators of equal length into one iterator of
+%% three-tuples, where the first element of each tuple is taken from
+%% the first iterator, the second element is taken from the
+%% corresponding element in the second iterator, and the third element
+%% is taken from the corresponding element in the third iterator.
+%% @end
+-spec zip3(Iterator1 :: iterator(A), Iterator2 :: iterator(B), Iterator3 :: iterator(C)) ->
+    Iterator4 :: iterator({A, B, C}).
+zip3(#iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} = Iterator3) ->
+    zipwith3(fun (A, B, C) -> {A, B, C} end, Iterator1, Iterator2, Iterator3).
+
+%% @doc
+%% Combines the elements of two iterators of equal length into one iterator.
+%% For each pair `X, Y' of iterator elements from the two iterators, the element
+%% in the result iterator is `Combine(X, Y)'.
+%%
+%% `llists:zipwith(fun(X, Y) -> {X, Y} end, Iterator1, Iterator2)' is
+%% equivalent to `llists:zip(Iterator1, Iterator2)'.
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%% >  llists:zipwith(fun(X, Y) -> X + Y end, llists:seq(1, 3), llist:seq(4, 6))).
+%% [5,7,9]
+%% '''
+%% @end
+-spec zipwith(Combine :: fun((X, Y) -> Out), Iterator1 :: iterator(X), Iterator2 :: iterator(Y)) ->
+    Iterator3 :: iterator(Out).
+zipwith(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2) when
+      is_function(Combine, 2) ->
+    new(fun () ->
+                case {next(Iterator1), next(Iterator2)} of
+                    {[Elem1 | #iterator{} = NextIterator1],
+                     [Elem2 | #iterator{} = NextIterator2]} ->
+                        [Combine(Elem1, Elem2) |
+                         zipwith(Combine, NextIterator1, NextIterator2)];
+                    {[], []} ->
+                        [];
+                    _ ->
+                        % Because that's how lists:zip* crashes on
+                        % unequal length lists.
+                        error(function_clause)
+                end
+        end).
+
+%% @doc
+%% Combines the elements of three iterators of equal length into one
+%% iterator. For each triple `X, Y, Z' of iterator elements from the
+%% three iterators, the element in the result iterator is 
+%% `Combine(X, Y, Z)'.
+%%
+%% `zipwith3(fun(X, Y, Z) -> {X, Y, Z} end, Iterator1, Iterator2, Iterator3)'
+%% is equivalent to `zip3(Iterator1, Iterator2, Iterator3)'.
+%%
+%% Examples:
+%% ```
+%% > llists:to_list(
+%% >  llists:zipwith3(
+%% >   fun(X, Y, Z) -> X + Y + Z end,
+%% >   llists:seq(1, 3),
+%% >   llists:seq(4, 6),
+%% >   llists:seq(7, 9))).
+%% [12,15,18]
+%% > llists:to_list(
+%% >  llists:zipwith3(
+%% >   fun(X, Y, Z) -> [X, Y, Z] end,
+%% >   llists:from_list([a,b,c]),
+%% >   llists:from_list([x,y,z]),
+%% >   llists:seq(1, 3))).
+%% [[a,x,1],[b,y,2],[c,z,3]]
+%% '''
+%% @end
+-spec zipwith3(Combine :: fun((A, B, C) -> Out), Iterator1 :: iterator(A), Iterator2 :: iterator(B), Iterator3 :: iterator(C)) ->
+    Iterator4 :: iterator(Out).
+zipwith3(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} = Iterator3) when 
+      is_function(Combine, 3) ->
+    new(fun () ->
+                case {next(Iterator1), next(Iterator2), next(Iterator3)} of
+                    {[Elem1 | #iterator{} = NextIterator1],
+                     [Elem2 | #iterator{} = NextIterator2],
+                     [Elem3 | #iterator{} = NextIterator3]} ->
+                        [Combine(Elem1, Elem2, Elem3) |
+                         zipwith3(Combine, NextIterator1, NextIterator2, NextIterator3)];
+                    {[], [], []} ->
+                        [];
+                    _ ->
+                        % Because that's how lists:zip* crashes on
+                        % unequal length lists.
+                        error(function_clause)
+                end
+        end).
 
 %%%===================================================================
 %%% API - Iterator Evaluation
@@ -915,6 +1271,57 @@ foldr(Fun, Acc0, #iterator{} = Iterator) when is_function(Fun, 2) ->
 -spec foreach(Fun :: fun((Elem) -> any()), Iterator :: iterator(Elem)) -> ok.
 foreach(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     foreach_loop(Fun, next(Iterator)).
+
+%% @doc
+%% Searches the iterator of tuples `TupleIterator' for a tuple whose
+%% `N'th element compares equal to `Key'. Returns `Tuple' if such a
+%% tuple is found, otherwise `false'.
+%%
+%% The iterator will be evaluated until a match is found. If no match
+%% is found, infinite iterators will never return.
+%% @end
+-spec keyfind(Key :: any(), N :: pos_integer(), TupleIterator :: iterator()) ->
+    Tuple :: tuple() | false.
+keyfind(Key, N, #iterator{} = Iterator) when N > 0 ->
+    Found = search(fun (Elem) when element(N, Elem) == Key -> true;
+                       (_) -> false end,
+                   Iterator),
+    case Found of
+        {value, Value} when is_tuple(Value) ->
+            Value;
+        false ->
+            false
+    end.
+
+%% @doc
+%% Returns `true' if there is a tuple in `TupleIterator' whose `N'th
+%% element compares equal to `Key', otherwise `false'.
+%%
+%% The iterator will be evaluated until a match is found. If no match
+%% is found, infinite iterators will never return.
+%% @end
+-spec keymember(Key :: any(), N :: pos_integer(), TupleIterator :: iterator()) ->
+    boolean().
+keymember(Key, N, #iterator{} = Iterator) when N > 0 ->
+    any(fun (Elem) when element(N, Elem) == Key -> true;
+            (_) -> false
+        end,
+        Iterator).
+
+%% @doc
+%% Searches the iterator of tuples `TupleIterator' for a tuple whose
+%% `N'th element compares equal to `Key'. Returns `{value, Tuple}' if
+%% such a tuple is found, otherwise `false'.
+%%
+%% Function keyfind/3 is usually more convenient.
+%% @end
+%% @see keyfind/3
+-spec keysearch(Key :: any(), N :: pos_integer(), TupleIterator :: iterator()) ->
+    {value, Tuple :: tuple()} | false.
+keysearch(Key, N, #iterator{} = Iterator) ->
+    search(fun (Elem) when element(N, Elem) == Key -> true;
+               (_) -> false end,
+           Iterator).
 
 %% @doc
 %% Returns the last element in `Iterator'.
@@ -1082,7 +1489,7 @@ sort(#iterator{} = Iterator) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec sort(Fun :: fun((A, A) -> boolean()), Iterator1 :: iterator(A)) ->
+-spec sort(Fun :: compare(A, A), Iterator1 :: iterator(A)) ->
     Iterator2 :: iterator(A).
 sort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
     list_wrap(fun (I) -> lists:sort(Fun, I) end, Iterator).
@@ -1133,12 +1540,43 @@ list_wrap(ListFun, Iterator) ->
     llists:from_list(ListFun(llists:to_list(Iterator))).
 
 drop(Elem, List) ->
-    case lists:member(Elem, List) of
-        true ->
-            {dropped, List -- [Elem]};
-        false ->
-            none
+    case List -- [Elem] of
+        List ->
+            none;
+        Dropped ->
+            {dropped, Dropped}
     end.
+
+enumerate(List) ->
+    lists:zip(List, lists:seq(1, erlang:length(List))).
+
+fmerge(IteratorOfIterators) ->
+    fmerge(fun (A, B) -> A =< B end, IteratorOfIterators).
+
+fmerge(Fun, IteratorOfIterators) when is_function(Fun, 2) ->
+    Enumerated = enumerate(to_list(IteratorOfIterators)),
+    LazyLists = [{Next, Index} ||
+                 {Iter, Index} <- Enumerated,
+                 Next <- [next(Iter)],
+                 Next /= []],
+    unfold(fun ([]) ->
+                   none;
+               (LLists) ->
+                   Sorted = lists:sort(
+                              fun ({[Elem1 | _], Index1},
+                                   {[Elem2 | _], Index2}) ->
+                                      Fun(Elem1, Elem2)
+                              end, LLists),
+                   [{[Elem | Iterator], Index} | Rest] = Sorted,
+                   NextLLists = case next(Iterator) of
+                                    [] ->
+                                        Rest;
+                                    [_ | _] = NextLList ->
+                                        [{NextLList, Index} | Rest]
+                                end,
+                   {Elem, NextLLists}
+           end,
+           LazyLists).
 
 nthtail_loop(0, #iterator{} = Iterator) ->
     Iterator;
