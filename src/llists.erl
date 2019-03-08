@@ -540,6 +540,8 @@ keymap(Fun, N, #iterator{} = Iterator) when is_function(Fun, 1), N > 0 ->
 %% key-sorted before evaluating this function. When two tuples compare
 %% equal, the tuple from `TupleIterator1' is picked before the tuple
 %% from `TupleIterator2'.
+%%
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec keymerge(N :: pos_integer(), TupleIterator1 :: tuple_iterator(), TupleIterator2 :: tuple_iterator()) ->
     TupleIterator3 :: tuple_iterator().
@@ -643,6 +645,8 @@ map(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %% evaluating this function. When two elements compare equal, the
 %% element from the subiterator with the lowest position in
 %% `IteratorOfIterators' is picked before the other element.
+%%
+%% The first element of each subiterator will be evaluated.
 %% @end
 -spec merge(IteratorOfIterators :: iterator(iterator())) -> iterator().
 merge(#iterator{} = IteratorOfIterators) ->
@@ -654,6 +658,8 @@ merge(#iterator{} = IteratorOfIterators) ->
 %% evaluating this function.  When two elements compare equal, the
 %% element from `Iterator1' is picked before the element from
 %% `Iterator2'.
+%%
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec merge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
@@ -668,6 +674,8 @@ merge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% or equal to `B' in the ordering, otherwise `false'. When two
 %% elements compare equal, the element from `Iterator1' is picked
 %% before the element from `Iterator2'.
+%%
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec merge(Fun :: compare(A, B), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
@@ -682,6 +690,8 @@ merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% is such an element, is picked before the other element, otherwise
 %% the element from `Iterator2' is picked before the element from
 %% `Iterator3'.
+%%
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec merge3(Iterator1 :: iterator(A),
              Iterator2 :: iterator(B),
@@ -890,6 +900,10 @@ subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
 %% duplicates before evaluating this function. When two tuples compare
 %% equal, the tuple from `TupleIterator1' is picked and the one from
 %% `TupleIterator2' is deleted.
+%%
+%% The first element of each iterator will be evaluated. The previous
+%% element returned will be cached to check for uniqueness of future
+%% elements.
 %% @end
 -spec ukeymerge(N :: pos_integer(), TupleIterator1 :: tuple_iterator(), TupleIterator2 :: tuple_iterator()) ->
     TupleIterator3 :: tuple_iterator().
@@ -918,6 +932,10 @@ ukeysort(N, #iterator{} = Iterator) when N > 0 ->
 %% before evaluating this function. When two elements compare equal,
 %% the element from the subiterator with the lowest position in
 %% `IteratorOfIterators' is picked and the other is deleted.
+%%
+%% The first element of each subiterator will be evaluated. The
+%% previous element returned will be cached to check for uniqueness of
+%% future elements.
 %% @end
 -spec umerge(IteratorOfIterators :: iterator(iterator())) -> iterator().
 umerge(#iterator{} = IteratorOfIterators) ->
@@ -929,6 +947,10 @@ umerge(#iterator{} = IteratorOfIterators) ->
 %% contain no duplicates before evaluating this function. When two
 %% elements compare equal, the element from `Iterator1' is picked and
 %% the one from `Iterator2' is deleted.
+%%
+%% The first element of each iterator will be evaluated. The previous
+%% element returned will be cached to check for uniqueness of future
+%% elements.
 %% @end
 -spec umerge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
@@ -943,6 +965,10 @@ umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% `A' compares less than or equal to `B' in the ordering, otherwise
 %% `false'. When two elements compare equal, the element from
 %% `Iterator1' is picked and the one from `Iterator2' is deleted.
+%%
+%% The first element of each iterator will be evaluated. The previous
+%% element returned will be cached to check for uniqueness of future
+%% elements.
 %% @end
 -spec umerge(Fun :: compare(A, B), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
     iterator(A | B).
@@ -957,9 +983,10 @@ umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% element from `Iterator1' is picked if there is such an element,
 %% otherwise the element from `Iterator2' is picked, and the other is
 %% deleted.
-%% 
-%% All iterators are fully evaluated, infinite iterators will never
-%% return.
+%%
+%% The first element of each iterator will be evaluated. The previous
+%% element returned will be cached to check for uniqueness of future
+%% elements.
 %% @end
 -spec umerge3(Iterator1 :: iterator(A),
               Iterator2 :: iterator(B),
@@ -967,10 +994,7 @@ umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 umerge3(#iterator{} = Iterator1,
         #iterator{} = Iterator2,
         #iterator{} = Iterator3) ->
-    Merged = lists:umerge3(to_list(Iterator1),
-                           to_list(Iterator2),
-                           to_list(Iterator3)),
-    from_list(Merged).
+    unique(fmerge([Iterator1, Iterator2, Iterator3])).
 
 %% @doc
 %% "Unzips" a iterator of two-tuples into two iterators, where the
@@ -1582,35 +1606,16 @@ fmerge(Fun, ListOfIterators) when is_function(Fun, 2) ->
            Sorted).
 
 %% @private
-%% @doc
-%% Discards non-unique values in a sorted iterator. Expected to
-%% implement the required uniqueness for `umerge/1' and friends.
-%%
-%% If a value compares equal to the previously returned value, it is
-%% skipped.
-%% @end
+%% @see unique/2
 unique(#iterator{} = Iterator) ->
-    unfold(fun Next({_Prev, []}) ->
-                   none;
-               Next({Prev, #iterator{} = FoldIterator}) ->
-                   case {Prev, next(FoldIterator)}  of
-                       {_Prev, []} ->
-                           none;
-                       {{previous, PrevElem} = Prev,
-                        [Elem | #iterator{} = NextIterator]} when
-                             Elem == PrevElem ->
-                           % This must use ==, not pattern matching.
-                           Next({Prev, NextIterator});
-                       {_Prev, [Elem | #iterator{} = NextIterator]} ->
-                           {Elem, {{previous, Elem}, NextIterator}}
-                   end
-           end,
-           {first, Iterator}).
+    unique(fun erlang:'=='/2, Iterator).
 
 %% @private
 %% @doc
 %% Discards non-unique values in a sorted iterator according to a
-%% provided comparison function `Fun(A, B)'.
+%% provided equality function `Fun(A, B)' which should return `true'
+%% when `A' and `B' are equal and `false' otherwise. Expected to
+%% implement the required uniqueness for `umerge/1' and friends.
 %%
 %% If a value compares equal to the previously returned value, it is
 %% skipped.
