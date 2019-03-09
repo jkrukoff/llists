@@ -1,25 +1,48 @@
 %%%-------------------------------------------------------------------
 %%% @doc
+%%% A lazily evaluated lists module. This module provides an iterator
+%%% type, which is an opaque record wrapped around a list
+%%% continuation. These iterators are then used to provide a version
+%%% of the stdlib `lists' functions which only evaluate elements of
+%%% the iterator when needed.
 %%%
+%%% Several simple iterator constructors are provided as well as a
+%%% general purpose `unfold/2' constructor.
+%%%
+%%% The interface for this module attempts to follow the `lists'
+%%% behaviour as closely as possible. Guidelines for how past and
+%%% future translation is performed is as follows:
+%%%
+%%% <ul>
+%%% <li>Any input lists are changed to expect iterators.</li>
+%%% <li>Any output lists are changed to be iterators.</li>
+%%% <li>Any numeric counts for repition are changed to allow
+%%% 'infinity' as values and to be able to return infinite
+%%% iterators.</li>
+%%% <li>On error, the same exception should be raised, though it may
+%%% not be raised until the triggering element of an iterator is
+%%% evaluated.</li>
+%%% <li>Iteration evaluation behaviour is documented.</li>
+%%% </ul>
+%%%
+%%% As few functions outside of `lists' have been implemented as
+%%% possible, in order to have the best chance of keeping the
+%%% namespace clean for future additions to the `lists' module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(llists).
 
 -record(iterator, {next}).
 
-% -type next() :: next(any()).
--type next(Over) :: fun((Acc :: accumulator()) -> {Elem :: Over, NewAcc :: accumulator()} | none).
 -type iterator() :: iterator(any()).
 -opaque iterator(Over) :: #iterator{next :: fun(() -> lazy_list(Over))}.
 -type tuple_iterator() :: iterator(tuple()).
--type accumulator() :: any().
-% -type lazy_list() :: lazy_list(any()).
 -type lazy_list(Over) :: nonempty_improper_list(Over, iterator(Over)) | [].
 
-% -type predicate() :: predicate(any()).
--type predicate(Elem) :: fun((Elem) -> boolean()).
--type fold(Elem, AccIn, AccOut) :: fun((Elem, AccIn) -> AccOut).
 -type compare(A, B) :: fun((A, B) -> boolean()).
+-type fold(Elem, AccIn, AccOut) :: fun((Elem, AccIn) -> AccOut).
+-type predicate(Elem) :: fun((Elem) -> boolean()).
+-type unfold(Elem, AccIn, AccOut) :: fun((AccIn) -> {Elem, AccOut} | none).
 
 %% API
 -export([% Iterator construction.
@@ -107,36 +130,55 @@
          suffix/2,
          sum/1]).
 
--export_type([next/1,
-              iterator/1,
-              lazy_list/1]).
+-export_type([iterator/1,
+              lazy_list/1,
+              compare/2,
+              fold/3,
+              predicate/1,
+              unfold/3]).
 
 -compile({no_auto_import,
           [hd/1,
+           length/1,
            max/1,
            min/1,
-           length/1,
            tl/1]}).
 
 %%%===================================================================
 %%% API - Iterator Construction
 %%%===================================================================
 
--spec is_iterator(any()) -> boolean().
+%% @doc
+%% Tests if the given `Candidate' is an iterator, returns `true' if it
+%% and `false' otherwise.
+%% @end
+-spec is_iterator(Candidate :: any()) -> boolean().
 is_iterator(#iterator{}) ->
     true;
 is_iterator(_) ->
     false.
 
--spec from_list(list(Elem)) -> iterator(Elem).
-from_list(List) ->
+%% @doc
+%% Construct a new iterator from an existing list. Each element of the
+%% list will be returned in order by the returned iterator.
+%% @end
+-spec from_list(List :: list(Elem)) -> Iterator :: iterator(Elem).
+from_list(List) when is_list(List) ->
     unfold(fun ([]) -> none;
                ([Head | Tail]) -> {Head, Tail}
            end,
            List).
 
--spec unfold(Fun :: next(Elem), Acc :: accumulator()) -> iterator(Elem).
-unfold(Fun, Acc) ->
+%% @doc
+%% Construct a new iterator from a `Fun(AccIn)' function and an
+%% initial accumulator value `Acc0'. When an element is demanded of
+%% the iterator, `Fun' will be invoked with the current accumulator to
+%% produce a value. `Fun' is expected to return a tuple of
+%% `{Elem, AccOut}': the element to produce and the new accumulator
+%% value. If iteration is complete, `Fun' should return `none'.
+%% @end
+-spec unfold(Fun :: unfold(Elem, AccIn :: Acc0 | AccOut, AccOut), Acc0) -> iterator(Elem).
+unfold(Fun, Acc) when is_function(Fun, 1) ->
     new(fun () ->
                 case Fun(Acc) of
                     {Elem, NewAcc} ->
@@ -1154,11 +1196,20 @@ zipwith3(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} 
 %%% API - Iterator Evaluation
 %%%===================================================================
 
--spec next(iterator(Elem)) -> lazy_list(Elem).
+%% @doc
+%% Demand an element from `Iterator'. Will return either an improper
+%% list containing the next element and an iterator as a continuation,
+%% or an empty list if iteration is complete.
+%% @end
+-spec next(Iterator :: iterator(Elem)) -> LazyList :: lazy_list(Elem).
 next(#iterator{next=Next}) ->
     Next().
 
--spec to_list(iterator(Elem)) -> [Elem].
+%% @doc
+%% Fully evaluate `Iterator' and return a list containing all elements
+%% produced. Infinite iterators will never return.
+%% @end
+-spec to_list(Iterator :: iterator(Elem)) -> List :: [Elem].
 to_list(#iterator{} = Iterator) ->
     to_list_loop(next(Iterator)).
 
