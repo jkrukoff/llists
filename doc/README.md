@@ -11,7 +11,7 @@ __Authors:__ John Krukoff ([`github@cultist.org`](mailto:github@cultist.org)).
 
 ### Overview ###
 
-![Lazy Construction Worker](lazy.jpg)
+![Lazy Construction Worker](lazy.png)
 
 
 ### Getting Started ###
