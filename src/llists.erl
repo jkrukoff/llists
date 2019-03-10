@@ -39,8 +39,14 @@
 -type tuple_iterator() :: iterator(tuple()).
 -type lazy_list(Over) :: nonempty_improper_list(Over, iterator(Over)) | [].
 
+-type accumulator() :: any().
+-type combine(A, B, Out) :: fun((A, B) -> Out).
+-type combine3(A, B, C, Out) :: fun((A, B, C) -> Out).
 -type compare(A, B) :: fun((A, B) -> boolean()).
+-type filtermap(A, B) :: fun((A) -> boolean() | {true, B}).
 -type fold(Elem, AccIn, AccOut) :: fun((Elem, AccIn) -> AccOut).
+-type map(A, B) :: fun((A) -> B).
+-type mapfold(A, AccIn, B, AccOut) :: fun((A, AccIn) -> {B, AccOut}).
 -type predicate(Elem) :: fun((Elem) -> boolean()).
 -type unfold(Elem, AccIn, AccOut) :: fun((AccIn) -> {Elem, AccOut} | none).
 
@@ -48,14 +54,17 @@
 -export([% Iterator construction.
          is_iterator/1,
          from_list/1,
+         from_map/1,
          unfold/2,
          duplicate/2,
          seq/2,
          seq/3,
          % Iterator utilities.
+         next/1,
+         hd/1,
+         tl/1,
          append/1,
          append/2,
-         concat/1,
          delete/2,
          droplast/1,
          dropwhile/2,
@@ -103,13 +112,12 @@
          zipwith/3,
          zipwith3/4,
          % Iterator evaluation.
-         next/1,
          to_list/1,
-         hd/1,
+         to_map/1,
          length/1,
-         tl/1,
          all/2,
          any/2,
+         concat/1,
          foldl/3,
          foldr/3,
          foreach/2,
@@ -132,8 +140,13 @@
 
 -export_type([iterator/1,
               lazy_list/1,
+              combine/3,
+              combine3/4,
               compare/2,
+              filtermap/2,
               fold/3,
+              map/2,
+              mapfold/4,
               predicate/1,
               unfold/3]).
 
@@ -152,7 +165,8 @@
 %% Tests if the given `Candidate' is an iterator, returns `true' if it
 %% and `false' otherwise.
 %% @end
--spec is_iterator(Candidate :: any()) -> boolean().
+-spec is_iterator(Candidate) -> boolean() when
+      Candidate :: any().
 is_iterator(#iterator{}) ->
     true;
 is_iterator(_) ->
@@ -162,12 +176,33 @@ is_iterator(_) ->
 %% Construct a new iterator from an existing list. Each element of the
 %% list will be returned in order by the returned iterator.
 %% @end
--spec from_list(List :: list(Elem)) -> Iterator :: iterator(Elem).
+-spec from_list(List) -> Iterator when
+      List :: list(Elem),
+      Iterator :: iterator(Elem).
 from_list(List) when is_list(List) ->
     unfold(fun ([]) -> none;
                ([Head | Tail]) -> {Head, Tail}
            end,
            List).
+
+%% @doc
+%% Construct a new iterator from an existing map. Each `{Key, Value}'
+%% tuple of the map will be returned in an arbitrary order by the
+%% returned iterator.
+%% @end
+-spec from_map(Map) -> Iterator when
+      Map :: maps:map(Key, Value),
+      Iterator :: iterator({Key, Value}).
+from_map(Map) when is_map(Map) ->
+    unfold(fun (MapIterator) ->
+                   case maps:next(MapIterator) of
+                       none ->
+                           none;
+                       {Key, Value, NextIterator} ->
+                           {{Key, Value}, NextIterator}
+                   end
+           end,
+           maps:iterator(Map)).
 
 %% @doc
 %% Construct a new iterator from a `Fun(AccIn)' function and an
@@ -177,7 +212,10 @@ from_list(List) when is_list(List) ->
 %% `{Elem, AccOut}': the element to produce and the new accumulator
 %% value. If iteration is complete, `Fun' should return `none'.
 %% @end
--spec unfold(Fun :: unfold(Elem, AccIn :: Acc0 | AccOut, AccOut), Acc0) -> iterator(Elem).
+-spec unfold(Fun, Acc0) -> Iterator when
+      Fun :: unfold(Elem, AccIn :: Acc0 | AccOut, AccOut),
+      Acc0 :: accumulator(),
+      Iterator :: iterator(Elem).
 unfold(Fun, Acc) when is_function(Fun, 1) ->
     new(fun () ->
                 case Fun(Acc) of
@@ -189,10 +227,13 @@ unfold(Fun, Acc) when is_function(Fun, 1) ->
         end).
 
 %% @doc
-%% Returns an iterator containing `N' copies of term `Elem'.
+%% Returns an iterator containing `N' copies of term `Elem'. If `N' is
+%% `infinity' iterator will return infinite copies of `Elem'.
 %% @end
--spec duplicate(infinity, Elem) -> iterator(Elem);
-               (N :: non_neg_integer(), Elem) -> iterator(Elem).
+-spec duplicate(N , Elem) -> Iterator when
+      N :: infinity | non_neg_integer(),
+      Elem :: any(),
+      Iterator :: iterator(Elem).
 duplicate(infinity, Elem) ->
     new(fun () ->
                 [Elem | duplicate(infinity, Elem)]
@@ -204,7 +245,10 @@ duplicate(N, Elem) when is_integer(N), N >= 0 ->
            N).
 
 %% @see seq/3
--spec seq(From :: integer(), To :: integer()) -> iterator(integer()).
+-spec seq(From, To) -> Iterator when
+      From :: integer(),
+      To :: integer(),
+      Iterator :: iterator(integer()).
 seq(From, To) ->
     seq(From, To, 1).
 
@@ -227,39 +271,43 @@ seq(From, To) ->
 %% length(lists:seq(From, To, Incr)) =:= (To - From + Incr) div Incr
 %% '''
 %% @end
--spec seq(From :: integer(),
-          To :: infinity | '-infinity',
-          Incr :: integer()) -> iterator(integer());
-         (From :: integer(),
-          To :: integer(),
-          Incr :: integer()) -> iterator(integer()).
-seq(From, infinity, Incr) when is_integer(From),
-                               is_integer(Incr),
-                               Incr > 0 ->
+-spec seq(From, To, Incr) -> Iterator when
+      From :: integer(),
+      To :: infinity | '-infinity' | integer(),
+      Incr :: integer(),
+      Iterator :: iterator(integer()).
+seq(From, infinity, Incr) when
+      is_integer(From),
+      is_integer(Incr),
+      Incr > 0 ->
     unfold(fun (Acc) -> {Acc, Acc + Incr} end, From);
-seq(From, '-infinity', Incr) when is_integer(From),
-                                  is_integer(Incr),
-                                  Incr < 0 ->
+seq(From, '-infinity', Incr) when
+      is_integer(From),
+      is_integer(Incr),
+      Incr < 0 ->
     unfold(fun (Acc) -> {Acc, Acc + Incr} end, From);
-seq(From, To, Incr) when is_integer(From),
-                         is_integer(To),
-                         is_integer(Incr),
-                         Incr > 0,
-                         From - Incr =< To ->
+seq(From, To, Incr) when
+      is_integer(From),
+      is_integer(To),
+      is_integer(Incr),
+      Incr > 0,
+      From - Incr =< To ->
     unfold(fun (Acc) when Acc > To -> none;
                (Acc) -> {Acc, Acc + Incr}
            end,
            From);
-seq(From, To, Incr) when is_integer(From),
-                         is_integer(To),
-                         is_integer(Incr),
-                         Incr < 0,
-                         From - Incr >= To ->
+seq(From, To, Incr) when
+      is_integer(From),
+      is_integer(To),
+      is_integer(Incr),
+      Incr < 0,
+      From - Incr >= To ->
     unfold(fun (Acc) when Acc < To -> none;
                (Acc) -> {Acc, Acc + Incr}
            end,
            From);
-seq(From, From, 0) when is_integer(From) ->
+seq(From, From, 0) when
+      is_integer(From) ->
     from_list([From]).
 
 %%%===================================================================
@@ -267,10 +315,67 @@ seq(From, From, 0) when is_integer(From) ->
 %%%===================================================================
 
 %% @doc
+%% Demand an element from `Iterator'. Will return either an improper
+%% list containing the next element and an iterator as a continuation,
+%% or an empty list if iteration is complete.
+%%
+%% Examples:
+%%
+%% ```
+%% > llists:next(llists:seq(1, 5)).
+%% [1|{iterator,#Fun<llists.1.134155648>}]
+%% > llists:next(llists:from_list([])).
+%% []
+%% '''
+%% @end
+-spec next(Iterator) -> LazyList when
+      Iterator :: iterator(Elem),
+      LazyList :: lazy_list(Elem).
+next(#iterator{next=Next}) ->
+    Next().
+
+%% @doc
+%% Returns the head of `Iterator', that is, the first element, for
+%% example:
+%%
+%% ```
+%% > llists:hd(llists:seq(1, 5)).
+%% 1
+%% '''
+%%
+%% Failure: `badarg' if `Iterator' is empty.
+%% @end
+-spec hd(Iterator) -> Elem when
+      Iterator :: iterator(Elem).
+hd(#iterator{} = Iterator) ->
+    erlang:hd(next(Iterator)).
+
+%% @doc
+%% Returns the tail of `Iterator1', that is, the iterator minus the
+%% first element, for example:
+%%
+%% ```
+%% > llists:to_list(
+%% >  llists:tl(
+%% >   llists:from_list([geesties, guilies, beasties]))).
+%% [guilies, beasties]
+%% '''
+%%
+%% Failure: `badarg' if `Iterator1' is empty.
+%% @end
+-spec tl(Iterator1) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
+tl(#iterator{} = Iterator) ->
+    erlang:tl(next(Iterator)).
+
+%% @doc
 %% Returns an iterator in which all the subiterators of
 %% `IteratorOfIterators' have been appended.
 %% @end
--spec append(IteratorOfIterators :: iterator(iterator())) -> iterator().
+-spec append(IteratorOfIterators) -> Iterator when
+      IteratorOfIterators :: iterator(iterator()),
+      Iterator :: iterator().
 append(#iterator{} = Iterator) ->
     unfold(fun Next({[], []}) ->
                    none;
@@ -289,27 +394,22 @@ append(#iterator{} = Iterator) ->
 %% Returns a new iterator `Iterator3', which is made from the elements
 %% of `Iterator1' followed by the elements of `Iterator2'.
 %% @end
--spec append(Iterator1 :: iterator(), Iterator2 :: iterator()) ->
-    Iterator3 :: iterator().
+-spec append(Iterator1, Iterator2) -> Iterator3 when
+      Iterator1 :: iterator(Elem1),
+      Iterator2 :: iterator(Elem2),
+      Iterator3 :: iterator(Elem1 | Elem2).
 append(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
     append(from_list([Iterator1, Iterator2])).
 
 %% @doc
-%% Concatenates the text representation of the elements of `Iterator'.
-%% The elements of `Iterator' can be atoms, integers, floats, or
-%% strings. The iterator will be fully evaluated, infinite iterators
-%% will never return.
-%% @end
--spec concat(Iterator :: iterator(atom() | integer() | float() | string())) ->
-    string().
-concat(#iterator{} = Iterator) ->
-    lists:concat(to_list(Iterator)).
-
-%% @doc
-%% Returns a copy of `Iterator' where the first element matching
+%% Returns a copy of `Iterator1' where the first element matching
 %% `Elem' is deleted, if there is such an element.
 %% @end
--spec delete(Elem, iterator(Elem)) -> iterator(Elem).
+-spec delete(Elem1, Iterator1) -> Iterator2 when
+      Elem1 :: any(),
+      Iterator1 :: iterator(Elem2),
+      Iterator2 :: iterator(Elem2),
+      Elem2 :: any().
 delete(Elem, #iterator{} = Iterator) ->
     new(fun () ->
                 case next(Iterator) of
@@ -323,13 +423,15 @@ delete(Elem, #iterator{} = Iterator) ->
         end).
 
 %% @doc
-%% Drops the last element of a `Iterator'. The `Iterator' is to be non-empty,
-%% otherwise the function crashes with a `function_clause'.
+%% Drops the last element of a `Iterator1'. The `Iterator1' is to be
+%% non-empty, otherwise the function crashes with a `function_clause'.
 %%
 %% Evaluates one element further in the iterator than the current
 %% value.
 %% @end
--spec droplast(Iterator :: iterator(Elem)) -> iterator(Elem).
+-spec droplast(Iterator1) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 droplast(#iterator{} = Iterator) ->
     % Notice the missing case for [] here, which forces the expected
     % error on an empty list.
@@ -346,11 +448,13 @@ droplast(#iterator{} = Iterator) ->
            next(Iterator)).
 
 %% @doc
-%% Drops elements `Elem' from `Iterator' while `Pred(Elem)' returns
+%% Drops elements `Elem' from `Iterator1' while `Pred(Elem)' returns
 %% true and returns the remaining iterator.
 %% @end
--spec dropwhile(Pred :: predicate(Elem), Iterator :: iterator(Elem)) ->
-    iterator(Elem).
+-spec dropwhile(Pred, Iterator1) -> Iterator2 when
+      Pred :: predicate(Elem),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 dropwhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     new(fun () ->
                 case next(Iterator) of
@@ -367,11 +471,13 @@ dropwhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
         end).
 
 %% @doc
-%% `Filtered' is an iterator of all elements `Elem' in `Iterator' for
+%% `Filtered' is an iterator of all elements `Elem' in `Iterator1' for
 %% which `Pred(Elem)' returns `true'.
 %% @end
--spec filter(Pred :: fun((Elem) -> boolean()), Iterator :: iterator(Elem)) ->
-    iterator(Elem).
+-spec filter(Pred, Iterator1) -> Iterator2 when
+      Pred :: predicate(Elem),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 filter(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     new(fun () ->
                 case next(Iterator) of
@@ -388,11 +494,11 @@ filter(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
         end).
 
 %% @doc
-%% Calls `Fun(Elem)' on successive elements `Elem' of `Iterator'.
+%% Calls `Fun(Elem)' on successive elements `Elem' of `Iterator1'.
 %% `Fun/1' must return either a Boolean or a tuple `{true, Value}'.
-%% The function returns the list of elements for which `Fun' returns a
-%% new value, where a value of `true' is synonymous with `{true,
-%% Elem}'.
+%% The function returns the iterator of elements for which `Fun'
+%% returns a new value, where a value of `true' is synonymous with
+%% `{true, Elem}'.
 %%
 %% That is, filtermap behaves as if it had been defined as follows,
 %% except that the iterator is not fully evaluated before elements are
@@ -410,7 +516,6 @@ filter(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% '''
 %%
 %% Example:
-%%
 %% ```
 %% > llists:to_list(
 %% >  llists:filtermap(
@@ -419,8 +524,10 @@ filter(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% [1,2]
 %% '''
 %% @end
--spec filtermap(Fun :: fun((Elem) -> boolean() | {true, Value :: any()}), iterator(Elem)) ->
-    iterator().
+-spec filtermap(Fun, Iterator1) -> Iterator2 when
+      Fun :: filtermap(Elem, Value),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem | Value).
 filtermap(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     new(fun () ->
                 case next(Iterator) of
@@ -441,15 +548,17 @@ filtermap(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %% @doc
 %% Equivalent to `length(flatten(DeepIterator))'.
 %% @end
--spec flatlength(DeepIterator :: iterator(any() | iterator())) -> non_neg_integer().
+-spec flatlength(DeepIterator) -> Length when
+      DeepIterator :: iterator(any() | iterator()),
+      Length :: non_neg_integer().
 flatlength(#iterator{} = DeepIterator) ->
     length(flatten(DeepIterator)).
 
 %% @doc
 %% Takes a function from `A's to iterators of `B's, and an iterator of
-%% `A's (`Iterator') and produces an iterator of `B's by applying the
-%% function to every element in `Iterator' and appending the resulting
-%% iterators.
+%% `A's (`Iterator1') and produces an iterator of `B's (`Iterator2')
+%% by applying the function to every element in `Iterator1' and
+%% appending the resulting iterators.
 %%
 %% That is, flatmap behaves as if it had been defined as follows:
 %%
@@ -459,7 +568,6 @@ flatlength(#iterator{} = DeepIterator) ->
 %% '''
 %%
 %% Example:
-%%
 %% ```
 %% > llists:to_list(
 %% >  llists:flatmap(
@@ -467,14 +575,19 @@ flatlength(#iterator{} = DeepIterator) ->
 %% >   llists:from_list([a,b,c]))).
 %% [a,a,b,b,c,c]
 %% '''
--spec flatmap(Fun :: fun((A) -> iterator(B)), Iterator :: iterator(A)) -> iterator(B).
+-spec flatmap(Fun, Iterator1) -> Iterator2 when
+      Fun :: map(A, iterator(B)),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B).
 flatmap(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     llists:append(llists:map(Fun, Iterator)).
 
 %% @doc
 %% Returns a flattened version of `DeepIterator'.
 %% @end
--spec flatten(DeepIterator :: iterator(any() | iterator())) -> iterator().
+-spec flatten(DeepIterator) -> Iterator when
+      DeepIterator :: iterator(any() | iterator()),
+      Iterator :: iterator().
 flatten(#iterator{} = DeepIterator) ->
     unfold(fun Next([]) ->
                    none;
@@ -493,13 +606,15 @@ flatten(#iterator{} = DeepIterator) ->
 %% Returns a flattened version of `DeepIterator' with tail `Tail'
 %% appended.
 %% @end
--spec flatten(DeepIterator :: iterator(any() | iterator()),
-              Tail :: iterator()) -> iterator().
+-spec flatten(DeepIterator, TailIterator) -> Iterator when
+      DeepIterator :: iterator(any() | iterator()),
+      TailIterator :: iterator(),
+      Iterator :: iterator().
 flatten(#iterator{} = DeepIterator, #iterator{} = Tail) ->
     append(flatten(DeepIterator), Tail).
 
 %% @doc
-%% Inserts `Sep' between each element in `Iterator'. Has no effect on
+%% Inserts `Sep' between each element in `Iterator1'. Has no effect on
 %% an empty iterator or on a singleton iterator. For example:
 %%
 %% ```
@@ -514,7 +629,10 @@ flatten(#iterator{} = DeepIterator, #iterator{} = Tail) ->
 %% Evaluates one element further in the iterator than the current
 %% value.
 %% @end
--spec join(Sep, iterator(Elem)) -> iterator(Sep | Elem).
+-spec join(Sep, Iterator1) -> Iterator2 when
+      Sep :: any(),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Sep | Elem).
 join(Sep, #iterator{} = Iterator) ->
     unfold(fun ([]) ->
                    none;
@@ -535,8 +653,11 @@ join(Sep, #iterator{} = Iterator) ->
 %% whose `N'th element compares equal to `Key' is deleted, if there is
 %% such a tuple.
 %% @end
--spec keydelete(Key :: any(), N :: pos_integer(), TupleIterator1 :: iterator(Elem)) ->
-    TupleIterator2 :: iterator(Elem).
+-spec keydelete(Key, N, TupleIterator1) -> TupleIterator2 when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem),
+      TupleIterator2 :: iterator(Elem).
 keydelete(Key, N, #iterator{} = Iterator) when N > 0 ->
     new(fun () ->
                 case next(Iterator) of
@@ -566,8 +687,11 @@ keydelete(Key, N, #iterator{} = Iterator) when N > 0 ->
 %% [{name,"jane",22},{name,"lizzie",20},{name,"lydia",15}]
 %% '''
 %% @end
--spec keymap(Fun :: fun((Term1 :: any()) -> Term2 :: any()), N :: pos_integer(), TupleIterator1 :: tuple_iterator()) ->
-    TupleIterator2 :: tuple_iterator().
+-spec keymap(Fun, N, TupleIterator1) -> TupleIterator2 when
+      Fun :: map(Term1 :: any(), Term2 :: any()),
+      N :: pos_integer,
+      TupleIterator1 :: tuple_iterator(),
+      TupleIterator2 :: tuple_iterator().
 keymap(Fun, N, #iterator{} = Iterator) when is_function(Fun, 1), N > 0 ->
     map(fun (Tuple) ->
                 Modified = Fun(element(N, Tuple)),
@@ -585,8 +709,13 @@ keymap(Fun, N, #iterator{} = Iterator) when is_function(Fun, 1), N > 0 ->
 %%
 %% The first element of each iterator will be evaluated.
 %% @end
--spec keymerge(N :: pos_integer(), TupleIterator1 :: tuple_iterator(), TupleIterator2 :: tuple_iterator()) ->
-    TupleIterator3 :: tuple_iterator().
+-spec keymerge(N, TupleIterator1, TupleIterator2) -> TupleIterator3 when
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem1),
+      TupleIterator2 :: iterator(Elem2),
+      TupleIterator3 :: iterator(Elem1 | Elem2),
+      Elem1 :: tuple(),
+      Elem2 :: tuple().
 keymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) when N > 0 ->
     Compare = fun (A, B) -> element(N, A) =< element(N, B) end,
     fmerge(Compare, [Iterator1, Iterator2]).
@@ -596,8 +725,12 @@ keymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) when N > 0 ->
 %% tuple whose `N'th element compares equal to `Key' is replaced with
 %% `NewTuple', if there is such a tuple `T'.
 %% @end
--spec keyreplace(Key :: any, N :: pos_integer(), TupleIterator1 :: iterator(Elem), NewTuple :: tuple()) ->
-    TupleIterator2 :: iterator(Elem | tuple()).
+-spec keyreplace(Key, N, TupleIterator1, NewTuple) -> TupleIterator2 when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem),
+      NewTuple :: tuple(),
+      TupleIterator2 :: iterator(Elem | NewTuple).
 keyreplace(Key, N, #iterator{} = Iterator, NewTuple) when N > 0, is_tuple(NewTuple) ->
     new(fun () ->
                 case next(Iterator) of
@@ -618,8 +751,11 @@ keyreplace(Key, N, #iterator{} = Iterator, NewTuple) when N > 0, is_tuple(NewTup
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec keysort(N :: pos_integer(), TupleIterator1 :: tuple_iterator()) ->
-    TupleIterator2 :: tuple_iterator().
+-spec keysort(N, TupleIterator1) -> TupleIterator2 when
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem),
+      TupleIterator2 :: iterator(Elem),
+      Elem :: tuple().
 keysort(N, #iterator{} = Iterator) when N > 0 ->
     list_wrap(fun (I) -> lists:keysort(N, I) end, Iterator).
 
@@ -630,8 +766,12 @@ keysort(N, #iterator{} = Iterator) when N > 0 ->
 %% tuple `T', a copy of `TupleIterator1' where `NewTuple' has been
 %% appended to the end is returned.
 %% @end
--spec keystore(Key :: any(), N :: pos_integer(), TupleIterator1 :: iterator(Elem), NewTuple :: tuple()) ->
-    TupleIterator2 :: iterator(Elem | tuple()).
+-spec keystore(Key, N, TupleIterator1, NewTuple) -> TupleIterator2 when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem),
+      NewTuple :: tuple(),
+      TupleIterator2 :: iterator(Elem | NewTuple).
 keystore(Key, N, #iterator{} = Iterator, NewTuple) when
       N > 0, is_tuple(NewTuple) ->
     new(fun () ->
@@ -656,8 +796,12 @@ keystore(Key, N, #iterator{} = Iterator, NewTuple) when
 %% `TupleIterator2' will evaluate the same elements again. If no match
 %% is found, infinite iterators will never return.
 %% @end
--spec keytake(Key :: any(), N :: pos_integer(), TupleIterator1 :: iterator(Elem)) ->
-    {value, Tuple :: tuple(), TupleIterator2 :: iterator(Elem)}.
+-spec keytake(Key, N, TupleIterator1) -> {value, Tuple, TupleIterator2} when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem),
+      Tuple :: tuple(),
+      TupleIterator2 :: iterator(Elem).
 keytake(Key, N, #iterator{} = Iterator) when N > 0 ->
     case keysearch(Key, N, Iterator) of
         {value, Tuple} ->
@@ -667,10 +811,14 @@ keytake(Key, N, #iterator{} = Iterator) when N > 0 ->
     end.
 
 %% @doc
-%% Takes a function `Fun' from `A's to `B's, and an `Iterator' of `A's and produces an
-%% iterator of `B's by applying the function to every element in the iterator.
+%% Takes a function `Fun' from `A's to `B's, and an `Iterator1' of
+%% `A's and produces an `Iterator2' of `B's by applying the function
+%% to every element in the iterator.
 %% @end
--spec map(Fun :: fun((A) -> B), Iterator :: iterator(A)) -> iterator(B).
+-spec map(Fun, Iterator1) -> Iterator2 when
+      Fun :: map(A, B),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B).
 map(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     new(fun () ->
                 case next(Iterator) of
@@ -690,7 +838,9 @@ map(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %%
 %% The first element of each subiterator will be evaluated.
 %% @end
--spec merge(IteratorOfIterators :: iterator(iterator())) -> iterator().
+-spec merge(IteratorOfIterators) -> Iterator when
+      IteratorOfIterators :: iterator(iterator()),
+      Iterator :: iterator().
 merge(#iterator{} = IteratorOfIterators) ->
     fmerge(to_list(IteratorOfIterators)).
 
@@ -703,8 +853,10 @@ merge(#iterator{} = IteratorOfIterators) ->
 %%
 %% The first element of each iterator will be evaluated.
 %% @end
--spec merge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
-    iterator(A | B).
+-spec merge(Iterator1, Iterator2) -> Iterator3 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(A | B).
 merge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
     fmerge([Iterator1, Iterator2]).
 
@@ -719,8 +871,11 @@ merge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %%
 %% The first element of each iterator will be evaluated.
 %% @end
--spec merge(Fun :: compare(A, B), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
-    iterator(A | B).
+-spec merge(Fun, Iterator1, Iterator2) -> Iterator3 when
+      Fun :: compare(A, B),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(A | B).
 merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     fmerge(Fun, [Iterator1, Iterator2]).
 
@@ -735,37 +890,44 @@ merge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %%
 %% The first element of each iterator will be evaluated.
 %% @end
--spec merge3(Iterator1 :: iterator(A),
-             Iterator2 :: iterator(B),
-             Iterator3 :: iterator(C)) -> iterator(A | B | C).
+-spec merge3(Iterator1, Iterator2, Iterator3) -> Iterator4 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(C),
+      Iterator4 :: iterator(A | B | C).
 merge3(#iterator{} = Iterator1,
        #iterator{} = Iterator2,
        #iterator{} = Iterator3) ->
     fmerge([Iterator1, Iterator2, Iterator3]).
 
 %% @doc
-%% Returns the `N'th tail of `Iterator', that is, the subiterator of
-%% `Iterator' starting at `N'+1 and continuing up to the end of the
+%% Returns the `N'th tail of `Iterator1', that is, the subiterator of
+%% `Iterator1' starting at `N'+1 and continuing up to the end of the
 %% iterator.
 %% @end
--spec nthtail(N :: non_neg_integer(), iterator(Elem)) -> iterator(Elem).
+-spec nthtail(N, Iterator1) -> Iterator2 when
+      N :: non_neg_integer(),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 nthtail(N, #iterator{} = Iterator) when is_integer(N), N >= 0 ->
     nthtail_loop(N, Iterator).
 
 %% @doc
-%% Returns an iterator with the elements in `Iterator' in reverse
+%% Returns an iterator with the elements in `Iterator1' in reverse
 %% order.
 %%
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec reverse(Iterator :: iterator(A)) -> iterator(A).
+-spec reverse(Iterator1) -> Iterator2 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(A).
 reverse(#iterator{} = Iterator) ->
     list_wrap(fun lists:reverse/1, Iterator).
 
 %% @doc
-%% Returns a list with the elements in `Iterator' in reverse order,
-%% with tail `Tail' appended.
+%% Returns a list with the elements in `Iterator1' in reverse order,
+%% with tail `TailIterator' appended.
 %%
 %% Example:
 %% ```
@@ -773,17 +935,21 @@ reverse(#iterator{} = Iterator) ->
 %% [4,3,2,1,a,b,c]
 %% '''
 %%
-%% The iterator `Iterator' will be fully evaluated, infinite iterators
-%% will never return.
+%% The iterator `Iterator1' will be fully evaluated, infinite
+%% iterators will never return.
 %% @end
--spec reverse(Iterator :: iterator(A),
-              Tail :: iterator(B)) -> iterator(A | B).
+-spec reverse(Iterator1, TailIterator) -> Iterator2 when
+      Iterator1 :: iterator(A),
+      TailIterator :: iterator(B),
+      Iterator2 :: iterator(A | B).
 reverse(#iterator{} = Iterator, #iterator{} = Tail) ->
     append(reverse(Iterator), Tail).
 
 %% @see sublist/3
--spec sublist(Iterator :: iterator(Elem),
-              Len :: non_neg_integer()) -> iterator(Elem).
+-spec sublist(Iterator1, Len) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Len :: non_neg_integer(),
+      Iterator2 :: iterator(Elem).
 sublist(#iterator{} = Iterator, Len) when is_integer(Len), Len >= 0->
     new(fun () ->
                 case {Len, next(Iterator)} of
@@ -797,14 +963,16 @@ sublist(#iterator{} = Iterator, Len) when is_integer(Len), Len >= 0->
         end).
 
 %% @doc
-%% Returns the portion of `Iterator' starting at `Start' and with
+%% Returns the portion of `Iterator1' starting at `Start' and with
 %% (maximum) `Len' elements. `Start' defaults to 1. It is not an error
 %% for `Start+Len' to exceed the length of the iterator, in that case
 %% the whole iterator is returned.
 %% @end
--spec sublist(Iterator :: iterator(Elem),
-              Start :: pos_integer(),
-              Len :: non_neg_integer()) -> iterator(Elem).
+-spec sublist(Iterator1, Start, Len) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Start :: pos_integer(),
+      Len :: non_neg_integer(),
+      Iterator2 :: iterator(Elem).
 sublist(#iterator{} = Iterator, Start, Len) when
       is_integer(Start),
       is_integer(Len),
@@ -813,12 +981,14 @@ sublist(#iterator{} = Iterator, Start, Len) when
     sublist(nthtail(Start - 1, Iterator), Len).
 
 %% @doc
-%% Takes elements `Elem' from `Iterator' while `Pred(Elem)' returns
+%% Takes elements `Elem' from `Iterator1' while `Pred(Elem)' returns
 %% true, that is, the function returns the longest prefix of the
 %% iterator for which all elements satisfy the predicate.
 %% @end
--spec takewhile(Pred :: predicate(Elem), Iterator :: iterator(Elem)) ->
-    iterator(Elem).
+-spec takewhile(Pred, Iterator1) -> Iterator2 when
+      Pred :: predicate(Elem),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 takewhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     new(fun () ->
                 case next(Iterator) of
@@ -835,16 +1005,21 @@ takewhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
         end).
 
 %% @doc
-%% Partitions `Iterator' into two iterators, where the first iterator contains all
-%% elements for which `Pred(Elem)' returns `true', and the second iterator
-%% contains all elements for which `Pred(Elem)' returns `false'.
+%% Partitions `Iterator1' into two iterators, where the first iterator
+%% contains all elements for which `Pred(Elem)' returns `true', and
+%% the second iterator contains all elements for which `Pred(Elem)'
+%% returns `false'.
 %%
 %% Examples:
 %% ```
-%% > {Satisfying, NotSatisfying} = llists:partition(fun(A) -> A rem 2 == 1 end, llists:seq(1, 7)),
+%% > {Satisfying, NotSatisfying} = llists:partition(
+%% >  fun(A) -> A rem 2 == 1 end,
+%% >  llists:seq(1, 7)),
 %% > {llists:to_list(Satisfying), llists:to_list(NotSatisfying)}.
 %% {[1,3,5,7],[2,4,6]}
-%% > {Satisfying, NotSatisfying} = llists:partition(fun(A) -> is_atom(A) end, llists:from_list([a,b,1,c,d,2,3,4,e])),
+%% > {Satisfying, NotSatisfying} = llists:partition(
+%% >  fun(A) -> is_atom(A) end,
+%% >  llists:from_list([a,b,1,c,d,2,3,4,e])),
 %% > {llists:to_list(Satisfying), llists:to_list(NotSatisfying)}.
 %% {[a,b,c,d,e],[1,2,3,4]}
 %% '''
@@ -852,8 +1027,11 @@ takewhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% For a different way to partition a list, see splitwith/2.
 %% @end
 %% @see splitwith/2
--spec partition(Pred :: predicate(Elem), Iterator :: iterator(Elem)) ->
-    {Satisfying :: iterator(Elem), NotSatisfying :: iterator(Elem)}.
+-spec partition(Pred, Iterator1) -> {Satisfying, NotSatisfying} when
+      Pred :: predicate(Elem),
+      Iterator1 :: iterator(Elem),
+      Satisfying :: iterator(Elem),
+      NotSatisfying :: iterator(Elem).
 partition(Pred, #iterator{} = Iterator) ->
     Satisfying = filter(Pred, Iterator),
     NotSatisfying = filter(fun (Elem) -> not Pred(Elem) end, Iterator),
@@ -867,13 +1045,16 @@ partition(Pred, #iterator{} = Iterator) ->
 %% Evaluates the first `N' elements of `Iterator1' to construct
 %% `Iterator3'.
 %% @end
--spec split(N :: non_neg_integer(), Iterator1 :: iterator(Elem)) ->
-    {Iterator2 :: iterator(Elem), Iterator3 :: iterator(Elem)}.
+-spec split(N, Iterator1) -> {Iterator2, Iterator3} when
+      N :: non_neg_integer(),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem),
+      Iterator3 :: iterator(Elem).
 split(N, #iterator{} = Iterator) when is_integer(N), N >= 0 ->
     {sublist(Iterator, N), nthtail(N, Iterator)}.
 
 %% @doc
-%% Partitions `Iterator' into two iterators according to `Pred'.
+%% Partitions `Iterator1' into two iterators according to `Pred'.
 %% `splitwith/2' behaves as if it is defined as follows:
 %%
 %% ```
@@ -899,8 +1080,11 @@ split(N, #iterator{} = Iterator) when is_integer(N), N >= 0 ->
 %% not return.
 %% @end
 %% @see partition/2
--spec splitwith(Pred :: predicate(Elem), Iterator :: iterator(Elem)) ->
-    {Iterator1 :: iterator(Elem), Iterator2 :: iterator(Elem)}.
+-spec splitwith(Pred, Iterator1) -> {Iterator2, Iterator3} when
+      Pred :: predicate(Elem),
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem),
+      Iterator3 :: iterator(Elem).
 splitwith(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     {takewhile(Pred, Iterator), dropwhile(Pred, Iterator)}.
 
@@ -917,8 +1101,10 @@ splitwith(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %%
 %% `Iterator2' is fully evaluated, infinite iterators will never return.
 %% @end
--spec subtract(Iterator1 :: iterator(Elem), Iterator2 :: iterator()) ->
-    iterator(Elem).
+-spec subtract(Iterator1, Iterator2) -> Iterator3 when
+        Iterator1 :: iterator(Elem),
+        Iterator2 :: iterator(),
+        Iterator3 :: iterator(Elem).
 subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
     unfold(fun Next({#iterator{} = FoldIterator, Remove}) ->
                    case next(FoldIterator) of
@@ -947,8 +1133,13 @@ subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
 %% element returned will be cached to check for uniqueness of future
 %% elements.
 %% @end
--spec ukeymerge(N :: pos_integer(), TupleIterator1 :: tuple_iterator(), TupleIterator2 :: tuple_iterator()) ->
-    TupleIterator3 :: tuple_iterator().
+-spec ukeymerge(N, TupleIterator1, TupleIterator2) -> TupleIterator3 when
+        N :: pos_integer(),
+        TupleIterator1 :: iterator(Elem1),
+        TupleIterator2 :: iterator(Elem2),
+        TupleIterator3 :: iterator(Elem1 | Elem2),
+        Elem1 :: tuple(),
+        Elem2 :: tuple().
 ukeymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     Equal = fun (A, B) -> element(N, A) == element(N, B) end,
     Compare = fun (A, B) -> element(N, A) =< element(N, B) end,
@@ -963,8 +1154,11 @@ ukeymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec ukeysort(N :: pos_integer(), TupleIterator1 :: tuple_iterator()) ->
-    TupleIterator2 :: tuple_iterator().
+-spec ukeysort(N, TupleIterator1) -> TupleIterator2 when
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem),
+      TupleIterator2 :: iterator(Elem),
+      Elem :: tuple().
 ukeysort(N, #iterator{} = Iterator) when N > 0 ->
     list_wrap(fun (I) -> lists:ukeysort(N, I) end, Iterator).
 
@@ -979,7 +1173,9 @@ ukeysort(N, #iterator{} = Iterator) when N > 0 ->
 %% previous element returned will be cached to check for uniqueness of
 %% future elements.
 %% @end
--spec umerge(IteratorOfIterators :: iterator(iterator())) -> iterator().
+-spec umerge(IteratorOfIterators) -> Iterator when
+      IteratorOfIterators :: iterator(iterator()),
+      Iterator :: iterator().
 umerge(#iterator{} = IteratorOfIterators) ->
     unique(fmerge(to_list(IteratorOfIterators))).
 
@@ -994,8 +1190,10 @@ umerge(#iterator{} = IteratorOfIterators) ->
 %% element returned will be cached to check for uniqueness of future
 %% elements.
 %% @end
--spec umerge(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
-    iterator(A | B).
+-spec umerge(Iterator1, Iterator2) -> Iterator3 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(A | B).
 umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
     unique(fmerge([Iterator1, Iterator2])).
 
@@ -1012,8 +1210,11 @@ umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% element returned will be cached to check for uniqueness of future
 %% elements.
 %% @end
--spec umerge(Fun :: compare(A, B), Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
-    iterator(A | B).
+-spec umerge(Fun, Iterator1, Iterator2) -> Iterator3 when
+      Fun :: compare(A, B),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(A | B).
 umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     unique(fmerge(Fun, [Iterator1, Iterator2])).
 
@@ -1030,9 +1231,11 @@ umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% element returned will be cached to check for uniqueness of future
 %% elements.
 %% @end
--spec umerge3(Iterator1 :: iterator(A),
-              Iterator2 :: iterator(B),
-              Iterator3 :: iterator(C)) -> iterator(A | B | C).
+-spec umerge3(Iterator1, Iterator2, Iterator3) -> Iterator4 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(C),
+      Iterator4 :: iterator(A | B | C).
 umerge3(#iterator{} = Iterator1,
         #iterator{} = Iterator2,
         #iterator{} = Iterator3) ->
@@ -1043,8 +1246,10 @@ umerge3(#iterator{} = Iterator1,
 %% first iterator contains the first element of each tuple, and the
 %% second iterator contains the second element of each tuple.
 %% @end
--spec unzip(Iterator1 :: iterator({A, B})) -> 
-    {Iterator2 :: iterator(A), Iterator3 :: iterator(B)}.
+-spec unzip(Iterator1) -> {Iterator2, Iterator3} when
+      Iterator1 :: iterator({A, B}),
+      Iterator2 :: iterator(A),
+      Iterator3 :: iterator(B).
 unzip(#iterator{} = Iterator) ->
     {map(fun ({A, _}) -> A end, Iterator),
      map(fun ({_, B}) -> B end, Iterator)}.
@@ -1055,8 +1260,11 @@ unzip(#iterator{} = Iterator) ->
 %% contains the second element of each tuple, and the third iterator
 %% contains the third element of each tuple.
 %% @end
--spec unzip3(Iterator1 :: iterator({A, B, C})) -> 
-    {Iterator2 :: iterator(A), Iterator3 :: iterator(B), Iterator4 :: iterator(C)}.
+-spec unzip3(Iterator1) -> {Iterator2, Iterator3, Iterator4} when
+      Iterator1 :: iterator({A, B, C}),
+      Iterator2 :: iterator(A),
+      Iterator3 :: iterator(B),
+      Iterator4 :: iterator(C).
 unzip3(#iterator{} = Iterator) ->
     {map(fun ({A, _, _}) -> A end, Iterator),
      map(fun ({_, B, _}) -> B end, Iterator),
@@ -1070,7 +1278,9 @@ unzip3(#iterator{} = Iterator) ->
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec usort(Iterator1 :: iterator(Elem)) -> iterator(Elem).
+-spec usort(Iterator1) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 usort(#iterator{} = Iterator) ->
     list_wrap(fun lists:usort/1, Iterator).
 
@@ -1084,7 +1294,11 @@ usort(#iterator{} = Iterator) ->
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec usort(Fun :: compare(A, A), Iterator1 :: iterator(A)) -> iterator(A).
+-spec usort(Fun, Iterator1) -> Iterator2 when
+      Fun :: compare(A, B),
+      B :: A,
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(A).
 usort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
     list_wrap(fun (I) -> lists:usort(Fun, I) end, Iterator).
 
@@ -1094,8 +1308,10 @@ usort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
 %% first iterator and the second element is taken from the
 %% corresponding element in the second iterator.
 %% @end
--spec zip(Iterator1 :: iterator(A), Iterator2 :: iterator(B)) ->
-    Iterator3 :: iterator({A, B}).
+-spec zip(Iterator1, Iterator2) -> Iterator3 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator({A, B}).
 zip(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
     zipwith(fun (A, B) -> {A, B} end, Iterator1, Iterator2).
 
@@ -1106,8 +1322,11 @@ zip(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% corresponding element in the second iterator, and the third element
 %% is taken from the corresponding element in the third iterator.
 %% @end
--spec zip3(Iterator1 :: iterator(A), Iterator2 :: iterator(B), Iterator3 :: iterator(C)) ->
-    Iterator4 :: iterator({A, B, C}).
+-spec zip3(Iterator1, Iterator2, Iterator3) -> Iterator4 when
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(C),
+      Iterator4 :: iterator({A, B, C}).
 zip3(#iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} = Iterator3) ->
     zipwith3(fun (A, B, C) -> {A, B, C} end, Iterator1, Iterator2, Iterator3).
 
@@ -1126,8 +1345,11 @@ zip3(#iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} = Iterator3) 
 %% [5,7,9]
 %% '''
 %% @end
--spec zipwith(Combine :: fun((X, Y) -> Out), Iterator1 :: iterator(X), Iterator2 :: iterator(Y)) ->
-    Iterator3 :: iterator(Out).
+-spec zipwith(Combine, Iterator1, Iterator2) -> Iterator3 when
+      Combine :: combine(X, Y, Out),
+      Iterator1 :: iterator(X),
+      Iterator2 :: iterator(Y),
+      Iterator3 :: iterator(Out).
 zipwith(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2) when
       is_function(Combine, 2) ->
     new(fun () ->
@@ -1172,9 +1394,16 @@ zipwith(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2) when
 %% [[a,x,1],[b,y,2],[c,z,3]]
 %% '''
 %% @end
--spec zipwith3(Combine :: fun((A, B, C) -> Out), Iterator1 :: iterator(A), Iterator2 :: iterator(B), Iterator3 :: iterator(C)) ->
-    Iterator4 :: iterator(Out).
-zipwith3(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} = Iterator3) when 
+-spec zipwith3(Combine, Iterator1, Iterator2, Iterator3) -> Iterator4 when
+      Combine :: combine3(A, B, C, Out),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B),
+      Iterator3 :: iterator(C),
+      Iterator4 :: iterator(Out).
+zipwith3(Combine,
+         #iterator{} = Iterator1,
+         #iterator{} = Iterator2,
+         #iterator{} = Iterator3) when 
       is_function(Combine, 3) ->
     new(fun () ->
                 case {next(Iterator1), next(Iterator2), next(Iterator3)} of
@@ -1182,7 +1411,10 @@ zipwith3(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} 
                      [Elem2 | #iterator{} = NextIterator2],
                      [Elem3 | #iterator{} = NextIterator3]} ->
                         [Combine(Elem1, Elem2, Elem3) |
-                         zipwith3(Combine, NextIterator1, NextIterator2, NextIterator3)];
+                         zipwith3(Combine,
+                                  NextIterator1,
+                                  NextIterator2,
+                                  NextIterator3)];
                     {[], [], []} ->
                         [];
                     _ ->
@@ -1197,36 +1429,30 @@ zipwith3(Combine, #iterator{} = Iterator1, #iterator{} = Iterator2, #iterator{} 
 %%%===================================================================
 
 %% @doc
-%% Demand an element from `Iterator'. Will return either an improper
-%% list containing the next element and an iterator as a continuation,
-%% or an empty list if iteration is complete.
-%% @end
--spec next(Iterator :: iterator(Elem)) -> LazyList :: lazy_list(Elem).
-next(#iterator{next=Next}) ->
-    Next().
-
-%% @doc
 %% Fully evaluate `Iterator' and return a list containing all elements
 %% produced. Infinite iterators will never return.
 %% @end
--spec to_list(Iterator :: iterator(Elem)) -> List :: [Elem].
+-spec to_list(Iterator) -> List when
+      Iterator :: iterator(Elem),
+      List :: [Elem].
 to_list(#iterator{} = Iterator) ->
     to_list_loop(next(Iterator)).
 
 %% @doc
-%% Returns the head of `Iterator', that is, the first element, for
-%% example:
+%% Fully evaluate an `Iterator' of `{Key, Value}' tuples and return a
+%% map containing all pairs produced. Infinite iterators will never
+%% return.
 %%
-%% ```
-%% > llists:hd(llists:seq(1, 5)).
-%% 1
-%% '''
-%%
-%% Failure: `badarg' if `Iterator' is empty.
+%% If duplicate `Key's are present in the iterator it is undefined
+%% which will appear in the final map.
 %% @end
--spec hd(Iterator :: iterator(Elem)) -> Elem.
-hd(#iterator{} = Iterator) ->
-    erlang:hd(next(Iterator)).
+-spec to_map(Iterator) -> Map when
+      Iterator :: iterator({Key, Value}),
+      Key :: any(),
+      Value :: any(),
+      Map :: maps:map(Key, Value).
+to_map(#iterator{} = Iterator) ->
+    to_map_loop(next(Iterator), #{}).
 
 %% @doc
 %% Returns the length of `Iterator', for example:
@@ -1239,25 +1465,11 @@ hd(#iterator{} = Iterator) ->
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
+-spec length(Iterator) -> Length when
+      Iterator :: iterator(),
+      Length :: non_neg_integer().
 length(#iterator{} = Iterator) ->
     foldl(fun (_, Acc) -> Acc + 1 end, 0, Iterator).
-
-%% @doc
-%% Returns the tail of `Iterator', that is, the iterator minus the
-%% first element, for example:
-%%
-%% ```
-%% > llists:to_list(
-%% >  llists:tl(
-%% >   llists:from_list([geesties, guilies, beasties]))).
-%% [guilies, beasties]
-%% '''
-%%
-%% Failure: `badarg' if `Iterator' is empty.
-%% @end
--spec tl(Iterator :: iterator(Elem)) -> iterator(Elem).
-tl(#iterator{} = Iterator) ->
-    erlang:tl(next(Iterator)).
 
 %% @doc
 %% Returns `true' if `Pred(Elem)' returns `true' for all elements
@@ -1266,7 +1478,9 @@ tl(#iterator{} = Iterator) ->
 %% Stops evaluating `Iterator' when `Pred(Elem)' returns `false' or
 %% when `Iterator' is empty.
 %% @end
--spec all(Pred :: predicate(Elem), Iterator :: iterator(Elem)) -> boolean().
+-spec all(Pred, Iterator) -> boolean() when
+      Pred :: predicate(Elem),
+      Iterator :: iterator(Elem).
 all(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     all_loop(Pred, next(Iterator)).
 
@@ -1277,9 +1491,22 @@ all(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% Stops evaluating `Iterator' when `Pred(Elem)' returns `true' or
 %% when `Iterator' is empty.
 %% @end
--spec any(predicate(Elem), iterator(Elem)) -> boolean().
+-spec any(Pred, Iterator) -> boolean() when
+    Pred :: predicate(Elem),
+    Iterator :: iterator(Elem).
 any(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     any_loop(Pred, next(Iterator)).
+
+%% @doc
+%% Concatenates the text representation of the elements of `Iterator'.
+%% The elements of `Iterator' can be atoms, integers, floats, or
+%% strings. The iterator will be fully evaluated, infinite iterators
+%% will never return.
+%% @end
+-spec concat(Iterator) -> string() when
+      Iterator :: iterator(atom() | integer() | float() | string()).
+concat(#iterator{} = Iterator) ->
+    lists:concat(to_list(Iterator)).
 
 %% @doc
 %% Calls `Fun(Elem, AccIn)' on successive elements `A' of `Iterator',
@@ -1291,7 +1518,10 @@ any(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec foldl(fold(A, AccIn :: any(), AccOut), Acc0 :: any(), iterator(A)) -> AccOut.
+-spec foldl(Fun, Acc0, Iterator) -> AccOut when
+      Fun :: fold(A, AccIn :: Acc0 | AccOut, AccOut),
+      Acc0 :: any(),
+      Iterator :: iterator(A).
 foldl(Fun, Acc0, #iterator{} = Iterator) when is_function(Fun, 2) ->
     foldl_loop(Fun, Acc0, next(Iterator)).
 
@@ -1313,7 +1543,10 @@ foldl(Fun, Acc0, #iterator{} = Iterator) when is_function(Fun, 2) ->
 %% iterator and is usually preferred to `foldr/3'.
 %% @end
 %% @see foldl/3
--spec foldr(fold(A, AccIn :: any(), AccOut), Acc0 :: any(), Iterator :: iterator(A)) -> AccOut.
+-spec foldr(Fun, Acc0, Iterator) -> AccOut when
+      Fun :: fold(A, AccIn :: Acc0 | AccOut, AccOut),
+      Acc0 :: any(),
+      Iterator :: iterator(A).
 foldr(Fun, Acc0, #iterator{} = Iterator) when is_function(Fun, 2) ->
     foldl(Fun, Acc0, reverse(Iterator)).
 
@@ -1326,7 +1559,9 @@ foldr(Fun, Acc0, #iterator{} = Iterator) when is_function(Fun, 2) ->
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec foreach(Fun :: fun((Elem) -> any()), Iterator :: iterator(Elem)) -> ok.
+-spec foreach(Fun, Iterator) -> ok when
+      Fun :: map(Elem, any()),
+      Iterator :: iterator(Elem).
 foreach(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
     foreach_loop(Fun, next(Iterator)).
 
@@ -1338,8 +1573,11 @@ foreach(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
 %% The iterator will be evaluated until a match is found. If no match
 %% is found, infinite iterators will never return.
 %% @end
--spec keyfind(Key :: any(), N :: pos_integer(), TupleIterator :: iterator()) ->
-    Tuple :: tuple() | false.
+-spec keyfind(Key, N, TupleIterator) -> Tuple | false when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator :: iterator(),
+      Tuple :: tuple() | false.
 keyfind(Key, N, #iterator{} = Iterator) when N > 0 ->
     Found = search(fun (Elem) when element(N, Elem) == Key -> true;
                        (_) -> false end,
@@ -1358,8 +1596,10 @@ keyfind(Key, N, #iterator{} = Iterator) when N > 0 ->
 %% The iterator will be evaluated until a match is found. If no match
 %% is found, infinite iterators will never return.
 %% @end
--spec keymember(Key :: any(), N :: pos_integer(), TupleIterator :: iterator()) ->
-    boolean().
+-spec keymember(Key, N, TupleIterator) -> boolean() when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator :: iterator().
 keymember(Key, N, #iterator{} = Iterator) when N > 0 ->
     any(fun (Elem) when element(N, Elem) == Key -> true;
             (_) -> false
@@ -1374,8 +1614,11 @@ keymember(Key, N, #iterator{} = Iterator) when N > 0 ->
 %% Function keyfind/3 is usually more convenient.
 %% @end
 %% @see keyfind/3
--spec keysearch(Key :: any(), N :: pos_integer(), TupleIterator :: iterator()) ->
-    {value, Tuple :: tuple()} | false.
+-spec keysearch(Key, N, TupleIterator) -> {value, Tuple} | false when
+      Key :: any(),
+      N :: pos_integer(),
+      TupleIterator :: iterator(),
+      Tuple :: tuple().
 keysearch(Key, N, #iterator{} = Iterator) ->
     search(fun (Elem) when element(N, Elem) == Key -> true;
                (_) -> false end,
@@ -1387,7 +1630,8 @@ keysearch(Key, N, #iterator{} = Iterator) ->
 %% The iterator will be fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec last(iterator(Elem)) -> Elem.
+-spec last(Iterator) -> Elem when
+      Iterator :: iterator(Elem).
 last(#iterator{} = Iterator) ->
     Last = foldl(fun (Elem, _Acc) -> {last, Elem} end,
                  undefined,
@@ -1404,9 +1648,10 @@ last(#iterator{} = Iterator) ->
 %% Combines the operations of `map/2' and `foldl/3' into one pass.
 %%
 %% Example:
-%% Summing the elements in an iterator and double them at the same time:
 %% ```
-%% > {Mapped, Acc} = llists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end, 0, llists:seq(1,5)),
+%% > % Summing the elements in an iterator and double them at the same time:
+%% > DoubleAndSum = fun(X, Sum) -> {2*X, X+Sum} end,
+%% > {Mapped, Acc} = llists:mapfoldl(DoubleAndSum, 0, llists:seq(1,5)),
 %% > {llists:to_list(Mapped), Acc}.
 %% {[2,4,6,8,10],15}
 %% '''
@@ -1414,8 +1659,11 @@ last(#iterator{} = Iterator) ->
 %% The iterator is fully evaluated before the mapfold begins, infinite
 %% iterators will never return.
 %% @end
--spec mapfoldl(Fun :: fun((A, AccIn :: Acc0 | AccOut) -> {B, AccOut}), Acc0, Iterator1 :: iterator(A)) ->
-    {Iterator2 :: iterator(B), Acc1 :: AccOut}.
+-spec mapfoldl(Fun, Acc0, Iterator1) -> {Iterator2, AccOut} when
+      Fun :: mapfold(A, AccIn :: Acc0 | AccOut, B, AccOut),
+      Acc0 :: accumulator(),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B).
 mapfoldl(Fun, Acc0, #iterator{} = Iterator) ->
     {Mapped, AccOut} = lists:mapfoldl(Fun, Acc0, to_list(Iterator)),
     {llists:from_list(Mapped), AccOut}.
@@ -1426,8 +1674,11 @@ mapfoldl(Fun, Acc0, #iterator{} = Iterator) ->
 %% The iterator is fully evaluated before the mapfold begins, infinite
 %% iterators will never return.
 %% @end
--spec mapfoldr(Fun :: fun((A, AccIn :: Acc0 | AccOut) -> {B, AccOut}), Acc0, Iterator1 :: iterator(A)) ->
-    {Iterator2 :: iterator(B), Acc1 :: AccOut}.
+-spec mapfoldr(Fun, Acc0, Iterator1) -> {Iterator2, AccOut} when
+      Fun :: mapfold(A, AccIn :: Acc0 | AccOut, B, AccOut),
+      Acc0 :: accumulator(),
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(B).
 mapfoldr(Fun, Acc0, #iterator{} = Iterator) ->
     {Mapped, AccOut} = lists:mapfoldr(Fun, Acc0, to_list(Iterator)),
     {llists:from_list(Mapped), AccOut}.
@@ -1439,7 +1690,8 @@ mapfoldr(Fun, Acc0, #iterator{} = Iterator) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec max(Iterator :: iterator(Elem)) -> Elem.
+-spec max(Iterator) -> Elem when
+      Iterator :: iterator(Elem).
 max(#iterator{} = Iterator) ->
     Max = foldl(fun (Elem, undefined) ->
                         {max, Elem};
@@ -1465,7 +1717,9 @@ max(#iterator{} = Iterator) ->
 %% Stops evaluating `Iterator' when a match is found or when
 %% `Iterator' is empty.
 %% @end
--spec member(Elem :: any(), Iterator :: iterator()) -> boolean().
+-spec member(Elem, Iterator) -> boolean() when
+      Elem :: any(),
+      Iterator :: iterator().
 member(Elem, #iterator{} = Iterator) ->
     any(fun (E) when E =:= Elem -> true;
             (_) -> false
@@ -1479,7 +1733,8 @@ member(Elem, #iterator{} = Iterator) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec min(Iterator :: iterator(Elem)) -> Elem.
+-spec min(Iterator) -> Elem when
+      Iterator :: iterator(Elem).
 min(#iterator{} = Iterator) ->
     Min = foldl(fun (Elem, undefined) ->
                         {min, Elem};
@@ -1507,7 +1762,9 @@ min(#iterator{} = Iterator) ->
 %% c
 %% '''
 %% @end
--spec nth(N :: pos_integer(), Iterator :: iterator(Elem)) -> Elem.
+-spec nth(N, Iterator) -> Elem when
+      N :: pos_integer(),
+      Iterator :: iterator(Elem).
 nth(N, #iterator{} = Iterator) when N > 0 ->
     Tail = nthtail(N - 1, Iterator),
     case next(Tail) of
@@ -1524,7 +1781,9 @@ nth(N, #iterator{} = Iterator) when N > 0 ->
 %% Both iterators will be evaluated until the point they diverge. If
 %% both iterators are identical and infinite, will never return.
 %% @end
--spec prefix(Iterator1 :: iterator(), Iterator2 :: iterator()) -> boolean().
+-spec prefix(Iterator1, Iterator2) -> boolean() when
+      Iterator1 :: iterator(),
+      Iterator2 :: iterator().
 prefix(#iterator{} = Prefix, #iterator{} = Iterator) ->
     prefix_loop(next(Prefix), next(Iterator)).
 
@@ -1534,7 +1793,9 @@ prefix(#iterator{} = Prefix, #iterator{} = Iterator) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec sort(Iterator1 :: iterator(Elem)) -> Iterator2 :: iterator(Elem).
+-spec sort(Iterator1) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
 sort(#iterator{} = Iterator) ->
     list_wrap(fun lists:sort/1, Iterator).
 
@@ -1547,8 +1808,11 @@ sort(#iterator{} = Iterator) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec sort(Fun :: compare(A, A), Iterator1 :: iterator(A)) ->
-    Iterator2 :: iterator(A).
+-spec sort(Fun, Iterator1) -> Iterator2 when
+      Fun :: compare(A, B),
+      B :: A,
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(A).
 sort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
     list_wrap(fun (I) -> lists:sort(Fun, I) end, Iterator).
 
@@ -1560,8 +1824,9 @@ sort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
 %% The iterator is evaluated until a match is found. If no match is
 %% ever found, infinite iterators will never return.
 %% @end
--spec search(Pred :: predicate(Value), Iterator :: iterator()) ->
-    {value, Value} | false.
+-spec search(Pred, Iterator) -> {value, Value} | false when
+      Pred :: predicate(Value),
+      Iterator :: iterator().
 search(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     search_loop(Pred, next(Iterator)).
 
@@ -1572,7 +1837,9 @@ search(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% Both `Iterator1' and `Iterator2' are fully evaluated, infinite
 %% iterators will never return.
 %% @end
--spec suffix(Iterator1 :: iterator(), Iterator2 :: iterator()) -> boolean().
+-spec suffix(Iterator1, Iterator2) -> boolean() when
+      Iterator1 :: iterator(),
+      Iterator2 :: iterator().
 suffix(#iterator{} = Suffix, #iterator{} = Iterator) ->
     prefix(reverse(Suffix), reverse(Iterator)).
 
@@ -1582,7 +1849,10 @@ suffix(#iterator{} = Suffix, #iterator{} = Iterator) ->
 %% The iterator is fully evaluated, infinite iterators will never
 %% return.
 %% @end
--spec sum(Iterator :: iterator(number())) -> number().
+-spec sum(Iterator) -> Sum when
+      Iterator :: iterator(Elem),
+      Sum :: Elem,
+      Elem :: number().
 sum(#iterator{} = Iterator) ->
     foldl(fun (Elem, Acc) -> Elem + Acc end, 0, Iterator).
 
@@ -1703,6 +1973,11 @@ to_list_loop([]) ->
     [];
 to_list_loop([Head | #iterator{} = Iterator]) ->
     [Head | to_list_loop(next(Iterator))].
+
+to_map_loop([], Acc) ->
+    Acc;
+to_map_loop([{Key, Value} | #iterator{} = Iterator], Acc) ->
+    to_map_loop(next(Iterator), Acc#{Key=>Value}).
 
 all_loop(_Pred, []) ->
     true;

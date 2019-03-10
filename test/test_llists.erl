@@ -16,6 +16,12 @@ from_list_test() ->
                  llists:to_list(
                    llists:from_list([1, 2, 3]))).
 
+from_map_test() ->
+    ?assertEqual([{1, one}, {2, two}, {3, three}],
+                 llists:to_list(
+                   llists:sort(
+                     llists:from_map(#{1=>one, 2=>two, 3=>three})))).
+
 unfold_test() ->
     ?assertEqual([3, 2, 1],
                  llists:to_list(
@@ -84,6 +90,11 @@ to_list_test() ->
     ?assertEqual([1, 2, 3],
                  llists:to_list(
                    llists:from_list([1, 2, 3]))).
+
+to_map_test() ->
+    ?assertEqual(#{1=>one, 2=>two, 3=>three},
+                 llists:to_map(
+                     llists:from_list([{1, one}, {2, two}, {3, three}]))).
 
 all_test() ->
     ?assertEqual(true,
