@@ -13,10 +13,10 @@ A lazily evaluated lists module.
 ## Description ##
 
 This module provides an iterator
-type, which is an opaque record wrapped around a list
-continuation. These iterators are then used to provide a version
-of the stdlib `lists` functions which only evaluate elements of
-the iterator when needed.
+type which is an opaque record wrapped around a list continuation.
+These iterators are then used to provide a version of the stdlib
+`lists` functions which only evaluate elements of the iterator
+when demanded.
 
 Several simple iterator constructors are provided as well as a
 general purpose `unfold/2` constructor.
@@ -50,11 +50,51 @@ namespace clean for future additions to the `lists` module.
 
 
 
+### <a name="type-accumulator">accumulator()</a> ###
+
+
+<pre><code>
+accumulator() = any()
+</code></pre>
+
+
+
+
+### <a name="type-combine">combine()</a> ###
+
+
+<pre><code>
+combine(A, B, Out) = fun((A, B) -&gt; Out)
+</code></pre>
+
+
+
+
+### <a name="type-combine3">combine3()</a> ###
+
+
+<pre><code>
+combine3(A, B, C, Out) = fun((A, B, C) -&gt; Out)
+</code></pre>
+
+
+
+
 ### <a name="type-compare">compare()</a> ###
 
 
 <pre><code>
 compare(A, B) = fun((A, B) -&gt; boolean())
+</code></pre>
+
+
+
+
+### <a name="type-filtermap">filtermap()</a> ###
+
+
+<pre><code>
+filtermap(A, B) = fun((A) -&gt; boolean() | {true, B})
 </code></pre>
 
 
@@ -93,6 +133,26 @@ iterator() = <a href="#type-iterator">iterator</a>(any())
 
 <pre><code>
 lazy_list(Over) = nonempty_improper_list(Over, <a href="#type-iterator">iterator</a>(Over)) | []
+</code></pre>
+
+
+
+
+### <a name="type-map">map()</a> ###
+
+
+<pre><code>
+map(A, B) = fun((A) -&gt; B)
+</code></pre>
+
+
+
+
+### <a name="type-mapfold">mapfold()</a> ###
+
+
+<pre><code>
+mapfold(A, AccIn, B, AccOut) = fun((A, AccIn) -&gt; {B, AccOut})
 </code></pre>
 
 
@@ -140,20 +200,20 @@ Returns an iterator in which all the subiterators of
 Returns a new iterator <code>Iterator3</code>, which is made from the elements
 of <code>Iterator1</code> followed by the elements of <code>Iterator2</code>.</td></tr><tr><td valign="top"><a href="#concat-1">concat/1</a></td><td>
 Concatenates the text representation of the elements of <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#delete-2">delete/2</a></td><td>
-Returns a copy of <code>Iterator</code> where the first element matching
+Returns a copy of <code>Iterator1</code> where the first element matching
 <code>Elem</code> is deleted, if there is such an element.</td></tr><tr><td valign="top"><a href="#droplast-1">droplast/1</a></td><td>
-Drops the last element of a <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#dropwhile-2">dropwhile/2</a></td><td>
-Drops elements <code>Elem</code> from <code>Iterator</code> while <code>Pred(Elem)</code> returns
+Drops the last element of a <code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#dropwhile-2">dropwhile/2</a></td><td>
+Drops elements <code>Elem</code> from <code>Iterator1</code> while <code>Pred(Elem)</code> returns
 true and returns the remaining iterator.</td></tr><tr><td valign="top"><a href="#duplicate-2">duplicate/2</a></td><td>
 Returns an iterator containing <code>N</code> copies of term <code>Elem</code>.</td></tr><tr><td valign="top"><a href="#filter-2">filter/2</a></td><td>
-<code>Filtered</code> is an iterator of all elements <code>Elem</code> in <code>Iterator</code> for
+<code>Filtered</code> is an iterator of all elements <code>Elem</code> in <code>Iterator1</code> for
 which <code>Pred(Elem)</code> returns <code>true</code>.</td></tr><tr><td valign="top"><a href="#filtermap-2">filtermap/2</a></td><td>
-Calls <code>Fun(Elem)</code> on successive elements <code>Elem</code> of <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#flatlength-1">flatlength/1</a></td><td>
+Calls <code>Fun(Elem)</code> on successive elements <code>Elem</code> of <code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#flatlength-1">flatlength/1</a></td><td>
 Equivalent to <code>length(flatten(DeepIterator))</code>.</td></tr><tr><td valign="top"><a href="#flatmap-2">flatmap/2</a></td><td>
 Takes a function from <code>A</code>s to iterators of <code>B</code>s, and an iterator of
-<code>A</code>s (<code>Iterator</code>) and produces an iterator of <code>B</code>s by applying the
-function to every element in <code>Iterator</code> and appending the resulting
-iterators.</td></tr><tr><td valign="top"><a href="#flatten-1">flatten/1</a></td><td>
+<code>A</code>s (<code>Iterator1</code>) and produces an iterator of <code>B</code>s (<code>Iterator2</code>)
+by applying the function to every element in <code>Iterator1</code> and
+appending the resulting iterators.</td></tr><tr><td valign="top"><a href="#flatten-1">flatten/1</a></td><td>
 Returns a flattened version of <code>DeepIterator</code>.</td></tr><tr><td valign="top"><a href="#flatten-2">flatten/2</a></td><td>
 Returns a flattened version of <code>DeepIterator</code> with tail <code>Tail</code>
 appended.</td></tr><tr><td valign="top"><a href="#foldl-3">foldl/3</a></td><td>
@@ -161,12 +221,13 @@ Calls <code>Fun(Elem, AccIn)</code> on successive elements <code>A</code> of <co
 starting with <code>AccIn</code> == <code>Acc0</code>.</td></tr><tr><td valign="top"><a href="#foldr-3">foldr/3</a></td><td>
 Like <code>foldl/3</code>, but the list is traversed from right to left.</td></tr><tr><td valign="top"><a href="#foreach-2">foreach/2</a></td><td>
 Calls <code>Fun(Elem)</code> for each element <code>Elem</code> in <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#from_list-1">from_list/1</a></td><td>
-Construct a new iterator from an existing list.</td></tr><tr><td valign="top"><a href="#hd-1">hd/1</a></td><td>
+Construct a new iterator from an existing list.</td></tr><tr><td valign="top"><a href="#from_map-1">from_map/1</a></td><td>
+Construct a new iterator from an existing map.</td></tr><tr><td valign="top"><a href="#hd-1">hd/1</a></td><td>
 Returns the head of <code>Iterator</code>, that is, the first element, for
 example:.</td></tr><tr><td valign="top"><a href="#is_iterator-1">is_iterator/1</a></td><td>
 Tests if the given <code>Candidate</code> is an iterator, returns <code>true</code> if it
 and <code>false</code> otherwise.</td></tr><tr><td valign="top"><a href="#join-2">join/2</a></td><td>
-Inserts <code>Sep</code> between each element in <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#keydelete-3">keydelete/3</a></td><td>
+Inserts <code>Sep</code> between each element in <code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#keydelete-3">keydelete/3</a></td><td>
 Returns a copy of <code>TupleIterator1</code> where the first occurrence of a tuple
 whose <code>N</code>th element compares equal to <code>Key</code> is deleted, if there is
 such a tuple.</td></tr><tr><td valign="top"><a href="#keyfind-3">keyfind/3</a></td><td>
@@ -193,8 +254,9 @@ Searches the iterator of tuples <code>TupleIterator1</code> for a tuple whose
 <code>N</code>th element compares equal to <code>Key</code>.</td></tr><tr><td valign="top"><a href="#last-1">last/1</a></td><td>
 Returns the last element in <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#length-1">length/1</a></td><td>
 Returns the length of <code>Iterator</code>, for example:.</td></tr><tr><td valign="top"><a href="#map-2">map/2</a></td><td>
-Takes a function <code>Fun</code> from <code>A</code>s to <code>B</code>s, and an <code>Iterator</code> of <code>A</code>s and produces an
-iterator of <code>B</code>s by applying the function to every element in the iterator.</td></tr><tr><td valign="top"><a href="#mapfoldl-3">mapfoldl/3</a></td><td>
+Takes a function <code>Fun</code> from <code>A</code>s to <code>B</code>s, and an <code>Iterator1</code> of
+<code>A</code>s and produces an <code>Iterator2</code> of <code>B</code>s by applying the function
+to every element in the iterator.</td></tr><tr><td valign="top"><a href="#mapfoldl-3">mapfoldl/3</a></td><td>
 Combines the operations of <code>map/2</code> and <code>foldl/3</code> into one pass.</td></tr><tr><td valign="top"><a href="#mapfoldr-3">mapfoldr/3</a></td><td>
 Combines the operations of map/2 and foldr/3 into one pass.</td></tr><tr><td valign="top"><a href="#max-1">max/1</a></td><td>
 Returns the first element of <code>Iterator</code> that compares greater than
@@ -213,17 +275,18 @@ Returns the first element of <code>Iterator</code> that compares less than or
 equal to all other elements of <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#next-1">next/1</a></td><td>
 Demand an element from <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#nth-2">nth/2</a></td><td>
 Returns the <code>N</code>th element of <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#nthtail-2">nthtail/2</a></td><td>
-Returns the <code>N</code>th tail of <code>Iterator</code>, that is, the subiterator of
-<code>Iterator</code> starting at <code>N</code>+1 and continuing up to the end of the
+Returns the <code>N</code>th tail of <code>Iterator1</code>, that is, the subiterator of
+<code>Iterator1</code> starting at <code>N</code>+1 and continuing up to the end of the
 iterator.</td></tr><tr><td valign="top"><a href="#partition-2">partition/2</a></td><td>
-Partitions <code>Iterator</code> into two iterators, where the first iterator contains all
-elements for which <code>Pred(Elem)</code> returns <code>true</code>, and the second iterator
-contains all elements for which <code>Pred(Elem)</code> returns <code>false</code>.</td></tr><tr><td valign="top"><a href="#prefix-2">prefix/2</a></td><td>
+Partitions <code>Iterator1</code> into two iterators, where the first iterator
+contains all elements for which <code>Pred(Elem)</code> returns <code>true</code>, and
+the second iterator contains all elements for which <code>Pred(Elem)</code>
+returns <code>false</code>.</td></tr><tr><td valign="top"><a href="#prefix-2">prefix/2</a></td><td>
 Returns <code>true</code> if <code>Iterator1</code> is a prefix of <code>Iterator2</code>, otherwise <code>false</code>.</td></tr><tr><td valign="top"><a href="#reverse-1">reverse/1</a></td><td>
-Returns an iterator with the elements in <code>Iterator</code> in reverse
+Returns an iterator with the elements in <code>Iterator1</code> in reverse
 order.</td></tr><tr><td valign="top"><a href="#reverse-2">reverse/2</a></td><td>
-Returns a list with the elements in <code>Iterator</code> in reverse order,
-with tail <code>Tail</code> appended.</td></tr><tr><td valign="top"><a href="#search-2">search/2</a></td><td>
+Returns a list with the elements in <code>Iterator1</code> in reverse order,
+with tail <code>TailIterator</code> appended.</td></tr><tr><td valign="top"><a href="#search-2">search/2</a></td><td>
 If there is a <code>Value</code> in <code>Iterator</code> such that <code>Pred(Value)</code> returns <code>true</code>,
 returns <code>{value, Value}</code> for the first such <code>Value</code>, otherwise returns
 <code>false</code>.</td></tr><tr><td valign="top"><a href="#seq-2">seq/2</a></td><td></td></tr><tr><td valign="top"><a href="#seq-3">seq/3</a></td><td>
@@ -235,8 +298,8 @@ Returns an iterator containing the sorted elements of <code>Iterator1</code>.</t
 Returns an iterator containing the sorted elements of <code>Iterator1</code>,
 according to the ordering function <code>Fun</code>.</td></tr><tr><td valign="top"><a href="#split-2">split/2</a></td><td>
 Splits <code>Iterator1</code> into <code>Iterator2</code> and <code>Iterator3</code>.</td></tr><tr><td valign="top"><a href="#splitwith-2">splitwith/2</a></td><td>
-Partitions <code>Iterator</code> into two iterators according to <code>Pred</code>.</td></tr><tr><td valign="top"><a href="#sublist-2">sublist/2</a></td><td></td></tr><tr><td valign="top"><a href="#sublist-3">sublist/3</a></td><td>
-Returns the portion of <code>Iterator</code> starting at <code>Start</code> and with
+Partitions <code>Iterator1</code> into two iterators according to <code>Pred</code>.</td></tr><tr><td valign="top"><a href="#sublist-2">sublist/2</a></td><td></td></tr><tr><td valign="top"><a href="#sublist-3">sublist/3</a></td><td>
+Returns the portion of <code>Iterator1</code> starting at <code>Start</code> and with
 (maximum) <code>Len</code> elements.</td></tr><tr><td valign="top"><a href="#subtract-2">subtract/2</a></td><td>
 Returns a new iterator <code>Iterator3</code> that is a copy of <code>Iterator1</code>,
 subjected to the following procedure: for each element in
@@ -244,13 +307,15 @@ subjected to the following procedure: for each element in
 Returns <code>true</code> if <code>Iterator1</code> is a suffix of <code>Iterator2</code>, otherwise
 <code>false</code>.</td></tr><tr><td valign="top"><a href="#sum-1">sum/1</a></td><td>
 Returns the sum of the elements in <code>Iterator</code>.</td></tr><tr><td valign="top"><a href="#takewhile-2">takewhile/2</a></td><td>
-Takes elements <code>Elem</code> from <code>Iterator</code> while <code>Pred(Elem)</code> returns
+Takes elements <code>Elem</code> from <code>Iterator1</code> while <code>Pred(Elem)</code> returns
 true, that is, the function returns the longest prefix of the
 iterator for which all elements satisfy the predicate.</td></tr><tr><td valign="top"><a href="#tl-1">tl/1</a></td><td>
-Returns the tail of <code>Iterator</code>, that is, the iterator minus the
+Returns the tail of <code>Iterator1</code>, that is, the iterator minus the
 first element, for example:.</td></tr><tr><td valign="top"><a href="#to_list-1">to_list/1</a></td><td>
 Fully evaluate <code>Iterator</code> and return a list containing all elements
-produced.</td></tr><tr><td valign="top"><a href="#ukeymerge-3">ukeymerge/3</a></td><td>
+produced.</td></tr><tr><td valign="top"><a href="#to_map-1">to_map/1</a></td><td>
+Fully evaluate an <code>Iterator</code> of <code>{Key, Value}</code> tuples and return a
+map containing all pairs produced.</td></tr><tr><td valign="top"><a href="#ukeymerge-3">ukeymerge/3</a></td><td>
 Returns the sorted iterator formed by merging <code>TupleIterator1</code> and
 <code>TupleIterator2</code>.</td></tr><tr><td valign="top"><a href="#ukeysort-2">ukeysort/2</a></td><td>
 Returns a iterator containing the sorted elements of iterator
@@ -302,9 +367,10 @@ iterator.</td></tr></table>
 ### all/2 ###
 
 <pre><code>
-all(Pred::<a href="#type-predicate">predicate</a>(Elem), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; boolean()
+all(Pred, Iterator) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns `true` if `Pred(Elem)` returns `true` for all elements
 `Elem` in `Iterator`.
@@ -317,9 +383,10 @@ when `Iterator` is empty.
 ### any/2 ###
 
 <pre><code>
-any(Pred::<a href="#type-predicate">predicate</a>(Elem), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; boolean()
+any(Pred, Iterator) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns `true` if `Pred(Elem)` returns `true` for at least one
 element `Elem` in `Iterator`.
@@ -332,9 +399,10 @@ when `Iterator` is empty.
 ### append/1 ###
 
 <pre><code>
-append(IteratorOfIterators::<a href="#type-iterator">iterator</a>(<a href="#type-iterator">iterator()</a>)) -&gt; <a href="#type-iterator">iterator()</a>
+append(IteratorOfIterators) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>IteratorOfIterators = <a href="#type-iterator">iterator</a>(<a href="#type-iterator">iterator()</a>)</code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns an iterator in which all the subiterators of
 `IteratorOfIterators` have been appended.
@@ -344,9 +412,10 @@ Returns an iterator in which all the subiterators of
 ### append/2 ###
 
 <pre><code>
-append(Iterator1::<a href="#type-iterator">iterator()</a>, Iterator2::<a href="#type-iterator">iterator()</a>) -&gt; Iterator3::<a href="#type-iterator">iterator()</a>
+append(Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem1)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem2)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(Elem1 | Elem2)</code></li></ul>
 
 Returns a new iterator `Iterator3`, which is made from the elements
 of `Iterator1` followed by the elements of `Iterator2`.
@@ -356,9 +425,10 @@ of `Iterator1` followed by the elements of `Iterator2`.
 ### concat/1 ###
 
 <pre><code>
-concat(Iterator::<a href="#type-iterator">iterator</a>(atom() | integer() | float() | string())) -&gt; string()
+concat(Iterator) -&gt; string()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(atom() | integer() | float() | string())</code></li></ul>
 
 Concatenates the text representation of the elements of `Iterator`.
 The elements of `Iterator` can be atoms, integers, floats, or
@@ -370,11 +440,12 @@ will never return.
 ### delete/2 ###
 
 <pre><code>
-delete(Elem, Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+delete(Elem1, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Returns a copy of `Iterator` where the first element matching
+<ul class="definitions"><li><code>Elem1 = any()</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem2)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem2)</code></li><li><code>Elem2 = any()</code></li></ul>
+
+Returns a copy of `Iterator1` where the first element matching
 `Elem` is deleted, if there is such an element.
 
 <a name="droplast-1"></a>
@@ -382,12 +453,13 @@ Returns a copy of `Iterator` where the first element matching
 ### droplast/1 ###
 
 <pre><code>
-droplast(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+droplast(Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Drops the last element of a `Iterator`. The `Iterator` is to be non-empty,
-otherwise the function crashes with a `function_clause`.
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Drops the last element of a `Iterator1`. The `Iterator1` is to be
+non-empty, otherwise the function crashes with a `function_clause`.
 
 Evaluates one element further in the iterator than the current
 value.
@@ -397,11 +469,12 @@ value.
 ### dropwhile/2 ###
 
 <pre><code>
-dropwhile(Pred::<a href="#type-predicate">predicate</a>(Elem), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+dropwhile(Pred, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Drops elements `Elem` from `Iterator` while `Pred(Elem)` returns
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Drops elements `Elem` from `Iterator1` while `Pred(Elem)` returns
 true and returns the remaining iterator.
 
 <a name="duplicate-2"></a>
@@ -409,22 +482,25 @@ true and returns the remaining iterator.
 ### duplicate/2 ###
 
 <pre><code>
-duplicate(N::infinity, Elem) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+duplicate(N, Elem) -&gt; Iterator
 </code></pre>
-<br />
 
-Returns an iterator containing `N` copies of term `Elem`.
+<ul class="definitions"><li><code>N = infinity | non_neg_integer()</code></li><li><code>Elem = any()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Returns an iterator containing `N` copies of term `Elem`. If `N` is
+`infinity` iterator will return infinite copies of `Elem`.
 
 <a name="filter-2"></a>
 
 ### filter/2 ###
 
 <pre><code>
-filter(Pred::fun((Elem) -&gt; boolean()), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+filter(Pred, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-`Filtered` is an iterator of all elements `Elem` in `Iterator` for
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+`Filtered` is an iterator of all elements `Elem` in `Iterator1` for
 which `Pred(Elem)` returns `true`.
 
 <a name="filtermap-2"></a>
@@ -432,15 +508,16 @@ which `Pred(Elem)` returns `true`.
 ### filtermap/2 ###
 
 <pre><code>
-filtermap(Fun::fun((Elem) -&gt; boolean() | {true, Value::any()}), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator()</a>
+filtermap(Fun, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Calls `Fun(Elem)` on successive elements `Elem` of `Iterator`.
+<ul class="definitions"><li><code>Fun = <a href="#type-filtermap">filtermap</a>(Elem, Value)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem | Value)</code></li></ul>
+
+Calls `Fun(Elem)` on successive elements `Elem` of `Iterator1`.
 `Fun/1` must return either a Boolean or a tuple `{true, Value}`.
-The function returns the list of elements for which `Fun` returns a
-new value, where a value of `true` is synonymous with `{true,
-Elem}`.
+The function returns the iterator of elements for which `Fun`
+returns a new value, where a value of `true` is synonymous with
+`{true, Elem}`.
 
 That is, filtermap behaves as if it had been defined as follows,
 except that the iterator is not fully evaluated before elements are
@@ -472,9 +549,10 @@ Example:
 ### flatlength/1 ###
 
 <pre><code>
-flatlength(DeepIterator::<a href="#type-iterator">iterator</a>(any() | <a href="#type-iterator">iterator()</a>)) -&gt; non_neg_integer()
+flatlength(DeepIterator) -&gt; Length
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>DeepIterator = <a href="#type-iterator">iterator</a>(any() | <a href="#type-iterator">iterator()</a>)</code></li><li><code>Length = non_neg_integer()</code></li></ul>
 
 Equivalent to `length(flatten(DeepIterator))`.
 
@@ -483,14 +561,15 @@ Equivalent to `length(flatten(DeepIterator))`.
 ### flatmap/2 ###
 
 <pre><code>
-flatmap(Fun::fun((A) -&gt; <a href="#type-iterator">iterator</a>(B)), Iterator::<a href="#type-iterator">iterator</a>(A)) -&gt; <a href="#type-iterator">iterator</a>(B)
+flatmap(Fun, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-map">map</a>(A, <a href="#type-iterator">iterator</a>(B))</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li></ul>
 
 Takes a function from `A`s to iterators of `B`s, and an iterator of
-`A`s (`Iterator`) and produces an iterator of `B`s by applying the
-function to every element in `Iterator` and appending the resulting
-iterators.
+`A`s (`Iterator1`) and produces an iterator of `B`s (`Iterator2`)
+by applying the function to every element in `Iterator1` and
+appending the resulting iterators.
 
 That is, flatmap behaves as if it had been defined as follows:
 
@@ -514,9 +593,10 @@ Example:
 ### flatten/1 ###
 
 <pre><code>
-flatten(DeepIterator::<a href="#type-iterator">iterator</a>(any() | <a href="#type-iterator">iterator()</a>)) -&gt; <a href="#type-iterator">iterator()</a>
+flatten(DeepIterator) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>DeepIterator = <a href="#type-iterator">iterator</a>(any() | <a href="#type-iterator">iterator()</a>)</code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns a flattened version of `DeepIterator`.
 
@@ -525,9 +605,10 @@ Returns a flattened version of `DeepIterator`.
 ### flatten/2 ###
 
 <pre><code>
-flatten(DeepIterator::<a href="#type-iterator">iterator</a>(any() | <a href="#type-iterator">iterator()</a>), Tail::<a href="#type-iterator">iterator()</a>) -&gt; <a href="#type-iterator">iterator()</a>
+flatten(DeepIterator, TailIterator) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>DeepIterator = <a href="#type-iterator">iterator</a>(any() | <a href="#type-iterator">iterator()</a>)</code></li><li><code>TailIterator = <a href="#type-iterator">iterator()</a></code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns a flattened version of `DeepIterator` with tail `Tail`
 appended.
@@ -537,9 +618,10 @@ appended.
 ### foldl/3 ###
 
 <pre><code>
-foldl(Fun::<a href="#type-fold">fold</a>(A, AccIn::any(), AccOut), Acc0::any(), Iterator::<a href="#type-iterator">iterator</a>(A)) -&gt; AccOut
+foldl(Fun, Acc0, Iterator) -&gt; AccOut
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-fold">fold</a>(A, AccIn::Acc0 | AccOut, AccOut)</code></li><li><code>Acc0 = any()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(A)</code></li></ul>
 
 Calls `Fun(Elem, AccIn)` on successive elements `A` of `Iterator`,
 starting with `AccIn` == `Acc0`. `Fun/2` must return a new
@@ -555,9 +637,10 @@ return.
 ### foldr/3 ###
 
 <pre><code>
-foldr(Fun::<a href="#type-fold">fold</a>(A, AccIn::any(), AccOut), Acc0::any(), Iterator::<a href="#type-iterator">iterator</a>(A)) -&gt; AccOut
+foldr(Fun, Acc0, Iterator) -&gt; AccOut
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-fold">fold</a>(A, AccIn::Acc0 | AccOut, AccOut)</code></li><li><code>Acc0 = any()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(A)</code></li></ul>
 
 Like `foldl/3`, but the list is traversed from right to left.
 
@@ -583,9 +666,10 @@ __See also:__ [foldl/3](#foldl-3).
 ### foreach/2 ###
 
 <pre><code>
-foreach(Fun::fun((Elem) -&gt; any()), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; ok
+foreach(Fun, Iterator) -&gt; ok
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-map">map</a>(Elem, any())</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Calls `Fun(Elem)` for each element `Elem` in `Iterator`. This
 function is used for its side effects and the evaluation order is
@@ -600,21 +684,37 @@ return.
 ### from_list/1 ###
 
 <pre><code>
-from_list(List::[Elem]) -&gt; Iterator::<a href="#type-iterator">iterator</a>(Elem)
+from_list(List) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>List = [Elem]</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Construct a new iterator from an existing list. Each element of the
 list will be returned in order by the returned iterator.
+
+<a name="from_map-1"></a>
+
+### from_map/1 ###
+
+<pre><code>
+from_map(Map) -&gt; Iterator
+</code></pre>
+
+<ul class="definitions"><li><code>Map = <a href="maps.md#type-map">maps:map</a>(Key, Value)</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>({Key, Value})</code></li></ul>
+
+Construct a new iterator from an existing map. Each `{Key, Value}`
+tuple of the map will be returned in an arbitrary order by the
+returned iterator.
 
 <a name="hd-1"></a>
 
 ### hd/1 ###
 
 <pre><code>
-hd(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; Elem
+hd(Iterator) -&gt; Elem
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns the head of `Iterator`, that is, the first element, for
 example:
@@ -631,9 +731,10 @@ Failure: `badarg` if `Iterator` is empty.
 ### is_iterator/1 ###
 
 <pre><code>
-is_iterator(Candidate::any()) -&gt; boolean()
+is_iterator(Candidate) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Candidate = any()</code></li></ul>
 
 Tests if the given `Candidate` is an iterator, returns `true` if it
 and `false` otherwise.
@@ -643,11 +744,12 @@ and `false` otherwise.
 ### join/2 ###
 
 <pre><code>
-join(Sep, Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Sep | Elem)
+join(Sep, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Inserts `Sep` between each element in `Iterator`. Has no effect on
+<ul class="definitions"><li><code>Sep = any()</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Sep | Elem)</code></li></ul>
+
+Inserts `Sep` between each element in `Iterator1`. Has no effect on
 an empty iterator or on a singleton iterator. For example:
 
 ```
@@ -667,9 +769,10 @@ value.
 ### keydelete/3 ###
 
 <pre><code>
-keydelete(Key::any(), N::pos_integer(), TupleIterator1::<a href="#type-iterator">iterator</a>(Elem)) -&gt; TupleIterator2::<a href="#type-iterator">iterator</a>(Elem)
+keydelete(Key, N, TupleIterator1) -&gt; TupleIterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns a copy of `TupleIterator1` where the first occurrence of a tuple
 whose `N`th element compares equal to `Key` is deleted, if there is
@@ -680,9 +783,10 @@ such a tuple.
 ### keyfind/3 ###
 
 <pre><code>
-keyfind(Key::any(), N::pos_integer(), TupleIterator::<a href="#type-iterator">iterator()</a>) -&gt; Tuple::tuple() | false
+keyfind(Key, N, TupleIterator) -&gt; Tuple | false
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator = <a href="#type-iterator">iterator()</a></code></li><li><code>Tuple = tuple() | false</code></li></ul>
 
 Searches the iterator of tuples `TupleIterator` for a tuple whose
 `N`th element compares equal to `Key`. Returns `Tuple` if such a
@@ -696,9 +800,10 @@ is found, infinite iterators will never return.
 ### keymap/3 ###
 
 <pre><code>
-keymap(Fun::fun((Term1::any()) -&gt; Term2::any()), N::pos_integer(), TupleIterator1::<a href="#type-tuple_iterator">tuple_iterator()</a>) -&gt; TupleIterator2::<a href="#type-tuple_iterator">tuple_iterator()</a>
+keymap(Fun, N, TupleIterator1) -&gt; TupleIterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-map">map</a>(Term1::any(), Term2::any())</code></li><li><code>N = pos_integer</code></li><li><code>TupleIterator1 = <a href="#type-tuple_iterator">tuple_iterator()</a></code></li><li><code>TupleIterator2 = <a href="#type-tuple_iterator">tuple_iterator()</a></code></li></ul>
 
 Returns an iterator of tuples where, for each tuple in
 `TupleIterator1`, the `N`th element `Term1` of the tuple has been
@@ -722,9 +827,10 @@ Examples:
 ### keymember/3 ###
 
 <pre><code>
-keymember(Key::any(), N::pos_integer(), TupleIterator::<a href="#type-iterator">iterator()</a>) -&gt; boolean()
+keymember(Key, N, TupleIterator) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns `true` if there is a tuple in `TupleIterator` whose `N`th
 element compares equal to `Key`, otherwise `false`.
@@ -737,9 +843,10 @@ is found, infinite iterators will never return.
 ### keymerge/3 ###
 
 <pre><code>
-keymerge(N::pos_integer(), TupleIterator1::<a href="#type-tuple_iterator">tuple_iterator()</a>, TupleIterator2::<a href="#type-tuple_iterator">tuple_iterator()</a>) -&gt; TupleIterator3::<a href="#type-tuple_iterator">tuple_iterator()</a>
+keymerge(N, TupleIterator1, TupleIterator2) -&gt; TupleIterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem1)</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem2)</code></li><li><code>TupleIterator3 = <a href="#type-iterator">iterator</a>(Elem1 | Elem2)</code></li><li><code>Elem1 = tuple()</code></li><li><code>Elem2 = tuple()</code></li></ul>
 
 Returns the sorted iterator formed by merging `TupleIterator1` and
 `TupleIterator2`. The merge is performed on the `N`th element of
@@ -755,9 +862,10 @@ The first element of each iterator will be evaluated.
 ### keyreplace/4 ###
 
 <pre><code>
-keyreplace(Key::any, N::pos_integer(), TupleIterator1::<a href="#type-iterator">iterator</a>(Elem), NewTuple::tuple()) -&gt; TupleIterator2::<a href="#type-iterator">iterator</a>(Elem | tuple())
+keyreplace(Key, N, TupleIterator1, NewTuple) -&gt; TupleIterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>NewTuple = tuple()</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem | NewTuple)</code></li></ul>
 
 Returns a copy of `TupleIterator1` where the first occurrence of a T
 tuple whose `N`th element compares equal to `Key` is replaced with
@@ -768,9 +876,10 @@ tuple whose `N`th element compares equal to `Key` is replaced with
 ### keysearch/3 ###
 
 <pre><code>
-keysearch(Key::any(), N::pos_integer(), TupleIterator::<a href="#type-iterator">iterator()</a>) -&gt; {value, Tuple::tuple()} | false
+keysearch(Key, N, TupleIterator) -&gt; {value, Tuple} | false
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator = <a href="#type-iterator">iterator()</a></code></li><li><code>Tuple = tuple()</code></li></ul>
 
 Searches the iterator of tuples `TupleIterator` for a tuple whose
 `N`th element compares equal to `Key`. Returns `{value, Tuple}` if
@@ -785,9 +894,10 @@ __See also:__ [keyfind/3](#keyfind-3).
 ### keysort/2 ###
 
 <pre><code>
-keysort(N::pos_integer(), TupleIterator1::<a href="#type-tuple_iterator">tuple_iterator()</a>) -&gt; TupleIterator2::<a href="#type-tuple_iterator">tuple_iterator()</a>
+keysort(N, TupleIterator1) -&gt; TupleIterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Elem = tuple()</code></li></ul>
 
 Returns an iterator containing the sorted elements of iterator
 `TupleIterator1`. Sorting is performed on the `N`th element of the
@@ -801,9 +911,10 @@ return.
 ### keystore/4 ###
 
 <pre><code>
-keystore(Key::any(), N::pos_integer(), TupleIterator1::<a href="#type-iterator">iterator</a>(Elem), NewTuple::tuple()) -&gt; TupleIterator2::<a href="#type-iterator">iterator</a>(Elem | tuple())
+keystore(Key, N, TupleIterator1, NewTuple) -&gt; TupleIterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>NewTuple = tuple()</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem | NewTuple)</code></li></ul>
 
 Returns a copy of `TupleIterator1` where the first occurrence of a
 tuple `T` whose `N`th element compares equal to `Key` is replaced
@@ -816,9 +927,10 @@ appended to the end is returned.
 ### keytake/3 ###
 
 <pre><code>
-keytake(Key::any(), N::pos_integer(), TupleIterator1::<a href="#type-iterator">iterator</a>(Elem)) -&gt; {value, Tuple::tuple(), TupleIterator2::<a href="#type-iterator">iterator</a>(Elem)}
+keytake(Key, N, TupleIterator1) -&gt; {value, Tuple, TupleIterator2}
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Key = any()</code></li><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Tuple = tuple()</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Searches the iterator of tuples `TupleIterator1` for a tuple whose
 `N`th element compares equal to `Key`. Returns
@@ -835,9 +947,10 @@ is found, infinite iterators will never return.
 ### last/1 ###
 
 <pre><code>
-last(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; Elem
+last(Iterator) -&gt; Elem
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns the last element in `Iterator`.
 
@@ -848,7 +961,11 @@ return.
 
 ### length/1 ###
 
-`length(Iterator) -> any()`
+<pre><code>
+length(Iterator) -&gt; Length
+</code></pre>
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li><li><code>Length = non_neg_integer()</code></li></ul>
 
 Returns the length of `Iterator`, for example:
 
@@ -865,29 +982,33 @@ return.
 ### map/2 ###
 
 <pre><code>
-map(Fun::fun((A) -&gt; B), Iterator::<a href="#type-iterator">iterator</a>(A)) -&gt; <a href="#type-iterator">iterator</a>(B)
+map(Fun, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Takes a function `Fun` from `A`s to `B`s, and an `Iterator` of `A`s and produces an
-iterator of `B`s by applying the function to every element in the iterator.
+<ul class="definitions"><li><code>Fun = <a href="#type-map">map</a>(A, B)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li></ul>
+
+Takes a function `Fun` from `A`s to `B`s, and an `Iterator1` of
+`A`s and produces an `Iterator2` of `B`s by applying the function
+to every element in the iterator.
 
 <a name="mapfoldl-3"></a>
 
 ### mapfoldl/3 ###
 
 <pre><code>
-mapfoldl(Fun::fun((A, AccIn::Acc0 | AccOut) -&gt; {B, AccOut}), Acc0, Iterator1::<a href="#type-iterator">iterator</a>(A)) -&gt; {Iterator2::<a href="#type-iterator">iterator</a>(B), Acc1::AccOut}
+mapfoldl(Fun, Acc0, Iterator1) -&gt; {Iterator2, AccOut}
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-mapfold">mapfold</a>(A, AccIn::Acc0 | AccOut, B, AccOut)</code></li><li><code>Acc0 = <a href="#type-accumulator">accumulator()</a></code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li></ul>
 
 Combines the operations of `map/2` and `foldl/3` into one pass.
 
 Example:
-Summing the elements in an iterator and double them at the same time:
 
 ```
-  > {Mapped, Acc} = llists:mapfoldl(fun(X, Sum) -> {2*X, X+Sum} end, 0, llists:seq(1,5)),
+  > % Summing the elements in an iterator and double them at the same time:
+  > DoubleAndSum = fun(X, Sum) -> {2*X, X+Sum} end,
+  > {Mapped, Acc} = llists:mapfoldl(DoubleAndSum, 0, llists:seq(1,5)),
   > {llists:to_list(Mapped), Acc}.
   {[2,4,6,8,10],15}
 ```
@@ -900,9 +1021,10 @@ iterators will never return.
 ### mapfoldr/3 ###
 
 <pre><code>
-mapfoldr(Fun::fun((A, AccIn::Acc0 | AccOut) -&gt; {B, AccOut}), Acc0, Iterator1::<a href="#type-iterator">iterator</a>(A)) -&gt; {Iterator2::<a href="#type-iterator">iterator</a>(B), Acc1::AccOut}
+mapfoldr(Fun, Acc0, Iterator1) -&gt; {Iterator2, AccOut}
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-mapfold">mapfold</a>(A, AccIn::Acc0 | AccOut, B, AccOut)</code></li><li><code>Acc0 = <a href="#type-accumulator">accumulator()</a></code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li></ul>
 
 Combines the operations of map/2 and foldr/3 into one pass.
 
@@ -914,9 +1036,10 @@ iterators will never return.
 ### max/1 ###
 
 <pre><code>
-max(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; Elem
+max(Iterator) -&gt; Elem
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns the first element of `Iterator` that compares greater than
 or equal to all other elements of `Iterator`.
@@ -929,9 +1052,10 @@ return.
 ### member/2 ###
 
 <pre><code>
-member(Elem::any(), Iterator::<a href="#type-iterator">iterator()</a>) -&gt; boolean()
+member(Elem, Iterator) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Elem = any()</code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns `true` if `Elem` matches some element of `Iterator`,
 otherwise `false`.
@@ -944,9 +1068,10 @@ Stops evaluating `Iterator` when a match is found or when
 ### merge/1 ###
 
 <pre><code>
-merge(IteratorOfIterators::<a href="#type-iterator">iterator</a>(<a href="#type-iterator">iterator()</a>)) -&gt; <a href="#type-iterator">iterator()</a>
+merge(IteratorOfIterators) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>IteratorOfIterators = <a href="#type-iterator">iterator</a>(<a href="#type-iterator">iterator()</a>)</code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns the sorted iterator formed by merging all the subiterators
 of `IteratorOfIterators`. All subiterators must be sorted before
@@ -961,9 +1086,10 @@ The first element of each subiterator will be evaluated.
 ### merge/2 ###
 
 <pre><code>
-merge(Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B)) -&gt; <a href="#type-iterator">iterator</a>(A | B)
+merge(Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(A | B)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1` and
 `Iterator2`. Both `Iterator1` and `Iterator2` must be sorted before
@@ -978,9 +1104,10 @@ The first element of each iterator will be evaluated.
 ### merge/3 ###
 
 <pre><code>
-merge(Fun::<a href="#type-compare">compare</a>(A, B), Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B)) -&gt; <a href="#type-iterator">iterator</a>(A | B)
+merge(Fun, Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-compare">compare</a>(A, B)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(A | B)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1` and
 `Iterator2`. Both `Iterator1` and `Iterator2` must be sorted
@@ -997,9 +1124,10 @@ The first element of each iterator will be evaluated.
 ### merge3/3 ###
 
 <pre><code>
-merge3(Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B), Iterator3::<a href="#type-iterator">iterator</a>(C)) -&gt; <a href="#type-iterator">iterator</a>(A | B | C)
+merge3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(C)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>(A | B | C)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1`,
 `Iterator2`, and `Iterator3`.  All of `Iterator1`, `Iterator2`, and
@@ -1016,9 +1144,10 @@ The first element of each iterator will be evaluated.
 ### min/1 ###
 
 <pre><code>
-min(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; Elem
+min(Iterator) -&gt; Elem
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns the first element of `Iterator` that compares less than or
 equal to all other elements of `Iterator`.
@@ -1031,22 +1160,33 @@ return.
 ### next/1 ###
 
 <pre><code>
-next(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; LazyList::<a href="#type-lazy_list">lazy_list</a>(Elem)
+next(Iterator) -&gt; LazyList
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>LazyList = <a href="#type-lazy_list">lazy_list</a>(Elem)</code></li></ul>
 
 Demand an element from `Iterator`. Will return either an improper
 list containing the next element and an iterator as a continuation,
 or an empty list if iteration is complete.
+
+Examples:
+
+```
+  > llists:next(llists:seq(1, 5)).
+  [1|{iterator,#Fun<llists.1.134155648>}]
+  > llists:next(llists:from_list([])).
+  []
+```
 
 <a name="nth-2"></a>
 
 ### nth/2 ###
 
 <pre><code>
-nth(N::pos_integer(), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; Elem
+nth(N, Iterator) -&gt; Elem
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns the `N`th element of `Iterator`.
 
@@ -1062,12 +1202,13 @@ Example:
 ### nthtail/2 ###
 
 <pre><code>
-nthtail(N::non_neg_integer(), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+nthtail(N, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Returns the `N`th tail of `Iterator`, that is, the subiterator of
-`Iterator` starting at `N`+1 and continuing up to the end of the
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Returns the `N`th tail of `Iterator1`, that is, the subiterator of
+`Iterator1` starting at `N`+1 and continuing up to the end of the
 iterator.
 
 <a name="partition-2"></a>
@@ -1075,21 +1216,27 @@ iterator.
 ### partition/2 ###
 
 <pre><code>
-partition(Pred::<a href="#type-predicate">predicate</a>(Elem), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; {Satisfying::<a href="#type-iterator">iterator</a>(Elem), NotSatisfying::<a href="#type-iterator">iterator</a>(Elem)}
+partition(Pred, Iterator1) -&gt; {Satisfying, NotSatisfying}
 </code></pre>
-<br />
 
-Partitions `Iterator` into two iterators, where the first iterator contains all
-elements for which `Pred(Elem)` returns `true`, and the second iterator
-contains all elements for which `Pred(Elem)` returns `false`.
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Satisfying = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>NotSatisfying = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Partitions `Iterator1` into two iterators, where the first iterator
+contains all elements for which `Pred(Elem)` returns `true`, and
+the second iterator contains all elements for which `Pred(Elem)`
+returns `false`.
 
 Examples:
 
 ```
-  > {Satisfying, NotSatisfying} = llists:partition(fun(A) -> A rem 2 == 1 end, llists:seq(1, 7)),
+  > {Satisfying, NotSatisfying} = llists:partition(
+  >  fun(A) -> A rem 2 == 1 end,
+  >  llists:seq(1, 7)),
   > {llists:to_list(Satisfying), llists:to_list(NotSatisfying)}.
   {[1,3,5,7],[2,4,6]}
-  > {Satisfying, NotSatisfying} = llists:partition(fun(A) -> is_atom(A) end, llists:from_list([a,b,1,c,d,2,3,4,e])),
+  > {Satisfying, NotSatisfying} = llists:partition(
+  >  fun(A) -> is_atom(A) end,
+  >  llists:from_list([a,b,1,c,d,2,3,4,e])),
   > {llists:to_list(Satisfying), llists:to_list(NotSatisfying)}.
   {[a,b,c,d,e],[1,2,3,4]}
 ```
@@ -1103,9 +1250,10 @@ __See also:__ [splitwith/2](#splitwith-2).
 ### prefix/2 ###
 
 <pre><code>
-prefix(Iterator1::<a href="#type-iterator">iterator()</a>, Iterator2::<a href="#type-iterator">iterator()</a>) -&gt; boolean()
+prefix(Iterator1, Iterator2) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator()</a></code></li><li><code>Iterator2 = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns `true` if `Iterator1` is a prefix of `Iterator2`, otherwise `false`.
 
@@ -1117,11 +1265,12 @@ both iterators are identical and infinite, will never return.
 ### reverse/1 ###
 
 <pre><code>
-reverse(Iterator::<a href="#type-iterator">iterator</a>(A)) -&gt; <a href="#type-iterator">iterator</a>(A)
+reverse(Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Returns an iterator with the elements in `Iterator` in reverse
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(A)</code></li></ul>
+
+Returns an iterator with the elements in `Iterator1` in reverse
 order.
 
 The iterator will be fully evaluated, infinite iterators will never
@@ -1132,12 +1281,13 @@ return.
 ### reverse/2 ###
 
 <pre><code>
-reverse(Iterator::<a href="#type-iterator">iterator</a>(A), Tail::<a href="#type-iterator">iterator</a>(B)) -&gt; <a href="#type-iterator">iterator</a>(A | B)
+reverse(Iterator1, TailIterator) -&gt; Iterator2
 </code></pre>
-<br />
 
-Returns a list with the elements in `Iterator` in reverse order,
-with tail `Tail` appended.
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>TailIterator = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(A | B)</code></li></ul>
+
+Returns a list with the elements in `Iterator1` in reverse order,
+with tail `TailIterator` appended.
 
 Example:
 
@@ -1146,17 +1296,18 @@ Example:
   [4,3,2,1,a,b,c]
 ```
 
-The iterator `Iterator` will be fully evaluated, infinite iterators
-will never return.
+The iterator `Iterator1` will be fully evaluated, infinite
+iterators will never return.
 
 <a name="search-2"></a>
 
 ### search/2 ###
 
 <pre><code>
-search(Pred::<a href="#type-predicate">predicate</a>(Value), Iterator::<a href="#type-iterator">iterator()</a>) -&gt; {value, Value} | false
+search(Pred, Iterator) -&gt; {value, Value} | false
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Value)</code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 If there is a `Value` in `Iterator` such that `Pred(Value)` returns `true`,
 returns `{value, Value}` for the first such `Value`, otherwise returns
@@ -1170,9 +1321,10 @@ ever found, infinite iterators will never return.
 ### seq/2 ###
 
 <pre><code>
-seq(From::integer(), To::integer()) -&gt; <a href="#type-iterator">iterator</a>(integer())
+seq(From, To) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>From = integer()</code></li><li><code>To = integer()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(integer())</code></li></ul>
 
 __See also:__ [seq/3](#seq-3).
 
@@ -1181,9 +1333,10 @@ __See also:__ [seq/3](#seq-3).
 ### seq/3 ###
 
 <pre><code>
-seq(From::integer(), To::infinity | -infinity, Incr::integer()) -&gt; <a href="#type-iterator">iterator</a>(integer())
+seq(From, To, Incr) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>From = integer()</code></li><li><code>To = infinity | -infinity | integer()</code></li><li><code>Incr = integer()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(integer())</code></li></ul>
 
 Returns an iterator over a sequence of integers that starts with
 `From` and contains the successive results of adding `Incr` to the
@@ -1212,9 +1365,10 @@ The following equalities hold for all sequences:
 ### sort/1 ###
 
 <pre><code>
-sort(Iterator1::<a href="#type-iterator">iterator</a>(Elem)) -&gt; Iterator2::<a href="#type-iterator">iterator</a>(Elem)
+sort(Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns an iterator containing the sorted elements of `Iterator1`.
 
@@ -1226,9 +1380,10 @@ return.
 ### sort/2 ###
 
 <pre><code>
-sort(Fun::<a href="#type-compare">compare</a>(A, A), Iterator1::<a href="#type-iterator">iterator</a>(A)) -&gt; Iterator2::<a href="#type-iterator">iterator</a>(A)
+sort(Fun, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-compare">compare</a>(A, B)</code></li><li><code>B = A</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(A)</code></li></ul>
 
 Returns an iterator containing the sorted elements of `Iterator1`,
 according to the ordering function `Fun`. `Fun(A, B)` is to return
@@ -1243,9 +1398,10 @@ return.
 ### split/2 ###
 
 <pre><code>
-split(N::non_neg_integer(), Iterator1::<a href="#type-iterator">iterator</a>(Elem)) -&gt; {Iterator2::<a href="#type-iterator">iterator</a>(Elem), Iterator3::<a href="#type-iterator">iterator</a>(Elem)}
+split(N, Iterator1) -&gt; {Iterator2, Iterator3}
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Splits `Iterator1` into `Iterator2` and `Iterator3`. `Iterator2`
 contains the first `N` elements and `Iterator3` the remaining
@@ -1259,11 +1415,12 @@ Evaluates the first `N` elements of `Iterator1` to construct
 ### splitwith/2 ###
 
 <pre><code>
-splitwith(Pred::<a href="#type-predicate">predicate</a>(Elem), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; {Iterator1::<a href="#type-iterator">iterator</a>(Elem), Iterator2::<a href="#type-iterator">iterator</a>(Elem)}
+splitwith(Pred, Iterator1) -&gt; {Iterator2, Iterator3}
 </code></pre>
-<br />
 
-Partitions `Iterator` into two iterators according to `Pred`.
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Partitions `Iterator1` into two iterators according to `Pred`.
 `splitwith/2` behaves as if it is defined as follows:
 
 ```
@@ -1296,9 +1453,10 @@ __See also:__ [partition/2](#partition-2).
 ### sublist/2 ###
 
 <pre><code>
-sublist(Iterator::<a href="#type-iterator">iterator</a>(Elem), Len::non_neg_integer()) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+sublist(Iterator1, Len) -&gt; Iterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Len = non_neg_integer()</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 __See also:__ [sublist/3](#sublist-3).
 
@@ -1307,11 +1465,12 @@ __See also:__ [sublist/3](#sublist-3).
 ### sublist/3 ###
 
 <pre><code>
-sublist(Iterator::<a href="#type-iterator">iterator</a>(Elem), Start::pos_integer(), Len::non_neg_integer()) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+sublist(Iterator1, Start, Len) -&gt; Iterator2
 </code></pre>
-<br />
 
-Returns the portion of `Iterator` starting at `Start` and with
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Start = pos_integer()</code></li><li><code>Len = non_neg_integer()</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Returns the portion of `Iterator1` starting at `Start` and with
 (maximum) `Len` elements. `Start` defaults to 1. It is not an error
 for `Start+Len` to exceed the length of the iterator, in that case
 the whole iterator is returned.
@@ -1321,9 +1480,10 @@ the whole iterator is returned.
 ### subtract/2 ###
 
 <pre><code>
-subtract(Iterator1::<a href="#type-iterator">iterator</a>(Elem), Iterator2::<a href="#type-iterator">iterator()</a>) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+subtract(Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator()</a></code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns a new iterator `Iterator3` that is a copy of `Iterator1`,
 subjected to the following procedure: for each element in
@@ -1343,9 +1503,10 @@ Example:
 ### suffix/2 ###
 
 <pre><code>
-suffix(Iterator1::<a href="#type-iterator">iterator()</a>, Iterator2::<a href="#type-iterator">iterator()</a>) -&gt; boolean()
+suffix(Iterator1, Iterator2) -&gt; boolean()
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator()</a></code></li><li><code>Iterator2 = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns `true` if `Iterator1` is a suffix of `Iterator2`, otherwise
 `false`.
@@ -1358,9 +1519,10 @@ iterators will never return.
 ### sum/1 ###
 
 <pre><code>
-sum(Iterator::<a href="#type-iterator">iterator</a>(number())) -&gt; number()
+sum(Iterator) -&gt; Sum
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Sum = Elem</code></li><li><code>Elem = number()</code></li></ul>
 
 Returns the sum of the elements in `Iterator`.
 
@@ -1372,11 +1534,12 @@ return.
 ### takewhile/2 ###
 
 <pre><code>
-takewhile(Pred::<a href="#type-predicate">predicate</a>(Elem), Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+takewhile(Pred, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Takes elements `Elem` from `Iterator` while `Pred(Elem)` returns
+<ul class="definitions"><li><code>Pred = <a href="#type-predicate">predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Takes elements `Elem` from `Iterator1` while `Pred(Elem)` returns
 true, that is, the function returns the longest prefix of the
 iterator for which all elements satisfy the predicate.
 
@@ -1385,11 +1548,12 @@ iterator for which all elements satisfy the predicate.
 ### tl/1 ###
 
 <pre><code>
-tl(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+tl(Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
 
-Returns the tail of `Iterator`, that is, the iterator minus the
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
+
+Returns the tail of `Iterator1`, that is, the iterator minus the
 first element, for example:
 
 ```
@@ -1399,28 +1563,47 @@ first element, for example:
   [guilies, beasties]
 ```
 
-Failure: `badarg` if `Iterator` is empty.
+Failure: `badarg` if `Iterator1` is empty.
 
 <a name="to_list-1"></a>
 
 ### to_list/1 ###
 
 <pre><code>
-to_list(Iterator::<a href="#type-iterator">iterator</a>(Elem)) -&gt; List::[Elem]
+to_list(Iterator) -&gt; List
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>List = [Elem]</code></li></ul>
 
 Fully evaluate `Iterator` and return a list containing all elements
 produced. Infinite iterators will never return.
+
+<a name="to_map-1"></a>
+
+### to_map/1 ###
+
+<pre><code>
+to_map(Iterator) -&gt; Map
+</code></pre>
+
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>({Key, Value})</code></li><li><code>Key = any()</code></li><li><code>Value = any()</code></li><li><code>Map = <a href="maps.md#type-map">maps:map</a>(Key, Value)</code></li></ul>
+
+Fully evaluate an `Iterator` of `{Key, Value}` tuples and return a
+map containing all pairs produced. Infinite iterators will never
+return.
+
+If duplicate `Key`s are present in the iterator it is undefined
+which will appear in the final map.
 
 <a name="ukeymerge-3"></a>
 
 ### ukeymerge/3 ###
 
 <pre><code>
-ukeymerge(N::pos_integer(), TupleIterator1::<a href="#type-tuple_iterator">tuple_iterator()</a>, TupleIterator2::<a href="#type-tuple_iterator">tuple_iterator()</a>) -&gt; TupleIterator3::<a href="#type-tuple_iterator">tuple_iterator()</a>
+ukeymerge(N, TupleIterator1, TupleIterator2) -&gt; TupleIterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem1)</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem2)</code></li><li><code>TupleIterator3 = <a href="#type-iterator">iterator</a>(Elem1 | Elem2)</code></li><li><code>Elem1 = tuple()</code></li><li><code>Elem2 = tuple()</code></li></ul>
 
 Returns the sorted iterator formed by merging `TupleIterator1` and
 `TupleIterator2`. The merge is performed on the `N`th element of each
@@ -1438,9 +1621,10 @@ elements.
 ### ukeysort/2 ###
 
 <pre><code>
-ukeysort(N::pos_integer(), TupleIterator1::<a href="#type-tuple_iterator">tuple_iterator()</a>) -&gt; TupleIterator2::<a href="#type-tuple_iterator">tuple_iterator()</a>
+ukeysort(N, TupleIterator1) -&gt; TupleIterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>TupleIterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>TupleIterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Elem = tuple()</code></li></ul>
 
 Returns a iterator containing the sorted elements of iterator
 `TupleIterator1` where all except the first tuple of the tuples
@@ -1455,9 +1639,10 @@ return.
 ### umerge/1 ###
 
 <pre><code>
-umerge(IteratorOfIterators::<a href="#type-iterator">iterator</a>(<a href="#type-iterator">iterator()</a>)) -&gt; <a href="#type-iterator">iterator()</a>
+umerge(IteratorOfIterators) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>IteratorOfIterators = <a href="#type-iterator">iterator</a>(<a href="#type-iterator">iterator()</a>)</code></li><li><code>Iterator = <a href="#type-iterator">iterator()</a></code></li></ul>
 
 Returns the sorted iterator formed by merging all the subiterators of
 `IteratorOfIterators`. All subiterators must be sorted and contain no duplicates
@@ -1474,9 +1659,10 @@ future elements.
 ### umerge/2 ###
 
 <pre><code>
-umerge(Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B)) -&gt; <a href="#type-iterator">iterator</a>(A | B)
+umerge(Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(A | B)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1` and
 `Iterator2`. Both `Iterator1` and `Iterator2` must be sorted and
@@ -1493,9 +1679,10 @@ elements.
 ### umerge/3 ###
 
 <pre><code>
-umerge(Fun::<a href="#type-compare">compare</a>(A, B), Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B)) -&gt; <a href="#type-iterator">iterator</a>(A | B)
+umerge(Fun, Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-compare">compare</a>(A, B)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(A | B)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1` and
 `Iterator2`. Both `Iterator1` and `Iterator2` must be sorted
@@ -1514,9 +1701,10 @@ elements.
 ### umerge3/3 ###
 
 <pre><code>
-umerge3(Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B), Iterator3::<a href="#type-iterator">iterator</a>(C)) -&gt; <a href="#type-iterator">iterator</a>(A | B | C)
+umerge3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(C)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>(A | B | C)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1`,
 `Iterator2`, and `Iterator3`.  All of `Iterator1`, `Iterator2`, and
@@ -1535,9 +1723,10 @@ elements.
 ### unfold/2 ###
 
 <pre><code>
-unfold(Fun::<a href="#type-unfold">unfold</a>(Elem, AccIn::Acc0 | AccOut, AccOut), Acc0) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+unfold(Fun, Acc0) -&gt; Iterator
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-unfold">unfold</a>(Elem, AccIn::Acc0 | AccOut, AccOut)</code></li><li><code>Acc0 = <a href="#type-accumulator">accumulator()</a></code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Construct a new iterator from a `Fun(AccIn)` function and an
 initial accumulator value `Acc0`. When an element is demanded of
@@ -1551,9 +1740,10 @@ value. If iteration is complete, `Fun` should return `none`.
 ### unzip/1 ###
 
 <pre><code>
-unzip(Iterator1::<a href="#type-iterator">iterator</a>({A, B})) -&gt; {Iterator2::<a href="#type-iterator">iterator</a>(A), Iterator3::<a href="#type-iterator">iterator</a>(B)}
+unzip(Iterator1) -&gt; {Iterator2, Iterator3}
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>({A, B})</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(B)</code></li></ul>
 
 "Unzips" a iterator of two-tuples into two iterators, where the
 first iterator contains the first element of each tuple, and the
@@ -1564,9 +1754,10 @@ second iterator contains the second element of each tuple.
 ### unzip3/1 ###
 
 <pre><code>
-unzip3(Iterator1::<a href="#type-iterator">iterator</a>({A, B, C})) -&gt; {Iterator2::<a href="#type-iterator">iterator</a>(A), Iterator3::<a href="#type-iterator">iterator</a>(B), Iterator4::<a href="#type-iterator">iterator</a>(C)}
+unzip3(Iterator1) -&gt; {Iterator2, Iterator3, Iterator4}
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>({A, B, C})</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>(C)</code></li></ul>
 
 "Unzips" a iterator of three-tuples into three iterators, where the first
 iterator contains the first element of each tuple, the second iterator
@@ -1578,9 +1769,10 @@ contains the third element of each tuple.
 ### usort/1 ###
 
 <pre><code>
-usort(Iterator1::<a href="#type-iterator">iterator</a>(Elem)) -&gt; <a href="#type-iterator">iterator</a>(Elem)
+usort(Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
 Returns a iterator containing the sorted elements of `Iterator1`
 where all except the first element of the elements comparing equal
@@ -1594,9 +1786,10 @@ return.
 ### usort/2 ###
 
 <pre><code>
-usort(Fun::<a href="#type-compare">compare</a>(A, A), Iterator1::<a href="#type-iterator">iterator</a>(A)) -&gt; <a href="#type-iterator">iterator</a>(A)
+usort(Fun, Iterator1) -&gt; Iterator2
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Fun = <a href="#type-compare">compare</a>(A, B)</code></li><li><code>B = A</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(A)</code></li></ul>
 
 Returns a iterator containing the sorted elements of `Iterator1` where all
 except the first element of the elements comparing equal according
@@ -1612,9 +1805,10 @@ return.
 ### zip/2 ###
 
 <pre><code>
-zip(Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B)) -&gt; Iterator3::<a href="#type-iterator">iterator</a>({A, B})
+zip(Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>({A, B})</code></li></ul>
 
 "Zips" two iterators of equal length into one iterator of
 two-tuples, where the first element of each tuple is taken from the
@@ -1626,9 +1820,10 @@ corresponding element in the second iterator.
 ### zip3/3 ###
 
 <pre><code>
-zip3(Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B), Iterator3::<a href="#type-iterator">iterator</a>(C)) -&gt; Iterator4::<a href="#type-iterator">iterator</a>({A, B, C})
+zip3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(C)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>({A, B, C})</code></li></ul>
 
 "Zips" three iterators of equal length into one iterator of
 three-tuples, where the first element of each tuple is taken from
@@ -1641,9 +1836,10 @@ is taken from the corresponding element in the third iterator.
 ### zipwith/3 ###
 
 <pre><code>
-zipwith(Combine::fun((X, Y) -&gt; Out), Iterator1::<a href="#type-iterator">iterator</a>(X), Iterator2::<a href="#type-iterator">iterator</a>(Y)) -&gt; Iterator3::<a href="#type-iterator">iterator</a>(Out)
+zipwith(Combine, Iterator1, Iterator2) -&gt; Iterator3
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Combine = <a href="#type-combine">combine</a>(X, Y, Out)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(X)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Y)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(Out)</code></li></ul>
 
 Combines the elements of two iterators of equal length into one iterator.
 For each pair `X, Y` of iterator elements from the two iterators, the element
@@ -1665,9 +1861,10 @@ Example:
 ### zipwith3/4 ###
 
 <pre><code>
-zipwith3(Combine::fun((A, B, C) -&gt; Out), Iterator1::<a href="#type-iterator">iterator</a>(A), Iterator2::<a href="#type-iterator">iterator</a>(B), Iterator3::<a href="#type-iterator">iterator</a>(C)) -&gt; Iterator4::<a href="#type-iterator">iterator</a>(Out)
+zipwith3(Combine, Iterator1, Iterator2, Iterator3) -&gt; Iterator4
 </code></pre>
-<br />
+
+<ul class="definitions"><li><code>Combine = <a href="#type-combine3">combine3</a>(A, B, C, Out)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(C)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>(Out)</code></li></ul>
 
 Combines the elements of three iterators of equal length into one
 iterator. For each triple `X, Y, Z` of iterator elements from the
