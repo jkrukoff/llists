@@ -94,7 +94,7 @@ to_list_test() ->
 to_map_test() ->
     ?assertEqual(#{1=>one, 2=>two, 3=>three},
                  llists:to_map(
-                     llists:from_list([{1, one}, {2, two}, {3, three}]))).
+                   llists:from_list([{1, one}, {2, two}, {3, three}]))).
 
 all_test() ->
     ?assertEqual(true,
@@ -153,7 +153,7 @@ filter_test() ->
     ?assertEqual([2],
                  llists:to_list(
                    llists:filter(fun (Elem) -> Elem == 2 end,
-                              llists:from_list([1, 2, 3])))).
+                                 llists:from_list([1, 2, 3])))).
 
 join_test_() ->
     [?_assertEqual([a, x, b, x, c],

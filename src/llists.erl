@@ -1,10 +1,10 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% A lazily evaluated lists module. This module provides an iterator
-%%% type, which is an opaque record wrapped around a list
-%%% continuation. These iterators are then used to provide a version
-%%% of the stdlib `lists' functions which only evaluate elements of
-%%% the iterator when needed.
+%%% type which is an opaque record wrapped around a list continuation.
+%%% These iterators are then used to provide a version of the stdlib
+%%% `lists' functions which only evaluate elements of the iterator
+%%% when demanded.
 %%%
 %%% Several simple iterator constructors are provided as well as a
 %%% general purpose `unfold/2' constructor.
@@ -1102,9 +1102,9 @@ splitwith(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% `Iterator2' is fully evaluated, infinite iterators will never return.
 %% @end
 -spec subtract(Iterator1, Iterator2) -> Iterator3 when
-        Iterator1 :: iterator(Elem),
-        Iterator2 :: iterator(),
-        Iterator3 :: iterator(Elem).
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(),
+      Iterator3 :: iterator(Elem).
 subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
     unfold(fun Next({#iterator{} = FoldIterator, Remove}) ->
                    case next(FoldIterator) of
@@ -1134,12 +1134,12 @@ subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
 %% elements.
 %% @end
 -spec ukeymerge(N, TupleIterator1, TupleIterator2) -> TupleIterator3 when
-        N :: pos_integer(),
-        TupleIterator1 :: iterator(Elem1),
-        TupleIterator2 :: iterator(Elem2),
-        TupleIterator3 :: iterator(Elem1 | Elem2),
-        Elem1 :: tuple(),
-        Elem2 :: tuple().
+      N :: pos_integer(),
+      TupleIterator1 :: iterator(Elem1),
+      TupleIterator2 :: iterator(Elem2),
+      TupleIterator3 :: iterator(Elem1 | Elem2),
+      Elem1 :: tuple(),
+      Elem2 :: tuple().
 ukeymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     Equal = fun (A, B) -> element(N, A) == element(N, B) end,
     Compare = fun (A, B) -> element(N, A) =< element(N, B) end,
@@ -1492,8 +1492,8 @@ all(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% when `Iterator' is empty.
 %% @end
 -spec any(Pred, Iterator) -> boolean() when
-    Pred :: predicate(Elem),
-    Iterator :: iterator(Elem).
+      Pred :: predicate(Elem),
+      Iterator :: iterator(Elem).
 any(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
     any_loop(Pred, next(Iterator)).
 
