@@ -1,6 +1,6 @@
 {application, llists,
  [{pkg_name, "llists"},
-  {description, "A library for creating and working with lazy lists."},
+  {description, "A library for creating and using lazily evaluated lists."},
   {vsn, "0.1.0"},
   {applications, [kernel,
                   stdlib]},

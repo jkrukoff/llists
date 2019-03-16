@@ -1893,38 +1893,50 @@ fmerge(IteratorOfIterators) ->
 %% second, `false' otherwise. All iterators are expected to be already
 %% ordered.
 %%
-%% This delegates all ordering to the `lists:merge/3' function in
-%% order to preserve its behaviour as much as possible, even in the
-%% face of degenerate ordering functions and invalid unordered inputs.
+%% This preserves the `lists' invariant that the leftmost iterator is
+%% chosen when values are equal. It is not able to replicate the
+%% behaviour of merge when given (invalid) unordered lists. Divergence
+%% appears to be easiest to replicate with input like:
+%% `[[0], [0], [0], [1, 0]]'.
 %%
 %% The name comes from the internals of the lists module, which
 %% delegates to a similarly named function to handle merging with an
 %% ordering function.
 %% @end
 fmerge(Fun, ListOfIterators) when is_function(Fun, 2) ->
-    Compare = fun ([Elem1 | _], [Elem2 | _]) ->
-                      Fun(Elem1, Elem2)
-              end,
     LazyLists = [Next || Iterator <- ListOfIterators,
                          Next <- [next(Iterator)],
                          Next /= []],
-    Sorted = lists:foldl(
-               fun (LazyList, Acc) ->
-                       lists:merge(Compare, [LazyList], Acc)
-               end,
-               [],
-               lists:reverse(LazyLists)),
     unfold(fun ([]) ->
                    none;
-               ([[Head | Iterator] | Rest]) ->
-                   case next(Iterator) of
-                       [] ->
-                           {Head, Rest};
-                       Next ->
-                           {Head, lists:merge(Compare, [Next], Rest)}
-                   end
+               ([_ | _] = Lists) ->
+                   fmerge_sort(Fun, Lists)
            end,
-           Sorted).
+           lists:reverse(LazyLists)).
+
+fmerge_compare(Fun, [Elem1 | _], [Elem2 | _]) ->
+    Fun(Elem1, Elem2).
+
+fmerge_next(Iterator, Before, After) ->
+    case next(Iterator) of
+        [] ->
+            Before ++ After;
+        [_ | _] = Next ->
+            Before ++ [Next | After]
+    end.
+
+fmerge_sort(Fun, [Smallest | FoundAfter] = After) ->
+    fmerge_sort(Fun, [], After, {Smallest, [], FoundAfter}).
+
+fmerge_sort(_Fun, _Before, [], {[Smallest | Iterator], FoundBefore, FoundAfter}) ->
+    {Smallest, fmerge_next(Iterator, lists:reverse(FoundBefore), FoundAfter)};
+fmerge_sort(Fun, Before, [Compare | After], {Smallest, _, _} = Found) ->
+    case fmerge_compare(Fun, Compare, Smallest) of
+        true ->
+            fmerge_sort(Fun, [Compare | Before], After, {Compare, Before, After});
+        false ->
+            fmerge_sort(Fun, [Compare | Before], After, Found)
+    end.
 
 %% @private
 %% @see unique/2
