@@ -1025,6 +1025,10 @@ takewhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
 %% '''
 %%
 %% For a different way to partition a list, see splitwith/2.
+%%
+%% Each result iterator will evaluate elements of the original
+%% iterator independently. If both are evaluated, this will result in
+%% all elements being evaluated twice.
 %% @end
 %% @see splitwith/2
 -spec partition(Pred, Iterator1) -> {Satisfying, NotSatisfying} when

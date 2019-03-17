@@ -259,9 +259,98 @@ prop_nthtail() ->
     ?FORALL({N, List},
             ?LET(Length,
                  non_neg_integer(),
-                 {integer(0, Length), resize(Length + 1, list())}),
+                 {integer(0, Length), lists:duplicate(Length, any())}),
             list_wrap(fun (L) -> llists:nthtail(N, L) end, List) ==
             lists:nthtail(N, List)).
+
+prop_reverse_1() ->
+    ?FORALL(List,
+            list(),
+            list_wrap(fun llists:reverse/1, List) ==
+            lists:reverse(List)).
+
+prop_reverse_2() ->
+    ?FORALL({List1, List2},
+            {list(), list()},
+            llists:to_list(llists:reverse(llists:from_list(List1),
+                                          llists:from_list(List2))) ==
+            lists:reverse(List1, List2)).
+
+prop_sublist_2() ->
+    ?FORALL({List, Length},
+            frequency([{5, ?LET(List,
+                                list(),
+                                {List, integer(0, length(List))})},
+                       {1, {list(), non_neg_integer()}}]),
+            list_wrap(fun (L) -> llists:sublist(L, Length) end, List) ==
+            lists:sublist(List, Length)).
+
+prop_sublist_3() ->
+    ?FORALL({List, Start, Length},
+            frequency([{5, ?LET(List,
+                                non_empty(list()),
+                                {List, index(List), integer(0, length(List))})},
+                       {1, ?LET(List,
+                                non_empty(list()),
+                                {List, index(List), non_neg_integer()})}]),
+            list_wrap(fun (L) -> llists:sublist(L, Start, Length) end, List) ==
+            lists:sublist(List, Start, Length)).
+
+prop_takewhile() ->
+    ?FORALL({Pred, List},
+            {function(1, boolean()), list()},
+            list_wrap(fun (L) -> llists:takewhile(Pred, L) end, List) ==
+            lists:takewhile(Pred, List)).
+
+prop_partition() ->
+    ?FORALL({Pred, List},
+            {function(1, boolean()), list()},
+            begin
+                {S, NS} = llists:partition(Pred, llists:from_list(List)),
+                {llists:to_list(S), llists:to_list(NS)} ==
+                lists:partition(Pred, List)
+            end).
+
+prop_split() ->
+    ?FORALL({N, List},
+            ?LET(List, list(), {integer(0, length(List)), List}),
+            begin
+                {Before, After} = llists:split(N, llists:from_list(List)),
+                {llists:to_list(Before), llists:to_list(After)} ==
+                lists:split(N, List)
+            end).
+
+prop_splitwith() ->
+    ?FORALL({Pred, List},
+            {function(1, boolean()), list()},
+            begin
+                {Before, After} = llists:splitwith(Pred,
+                                                   llists:from_list(List)),
+                {llists:to_list(Before), llists:to_list(After)} ==
+                lists:splitwith(Pred, List)
+            end).
+
+prop_subtract() ->
+    ?FORALL({List1, List2},
+            frequency([{5, ?LET(Elem,
+                                any(),
+                                {contains(Elem), contains(Elem)})},
+                       {1, {list(), list()}}]),
+            llists:to_list(llists:subtract(llists:from_list(List1),
+                                           llists:from_list(List2))) ==
+            lists:subtract(List1, List2)).
+
+prop_ukeymerge() ->
+    ?FORALL({N, List1, List2},
+            ?LET({N, List},
+                 key_list(),
+                 {N,
+                  keysortedish(N, List),
+                  keysortedish(N, key_list(any(), N))}),
+            llists:to_list(llists:ukeymerge(N,
+                                           llists:from_list(List1),
+                                           llists:from_list(List2))) ==
+            lists:ukeymerge(N, List1, List2)).
 
 %%%===================================================================
 %%% Generators
@@ -317,6 +406,9 @@ key_list(Of, Length) ->
 tuplish() ->
     frequency([{5, tuple()},
                {1, any()}]).
+
+index(List) ->
+    ?LET(L, List, integer(1, length(L))).
 
 contains(Elem) ->
     frequency([{5, ?LET({Before, After},
