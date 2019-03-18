@@ -16,7 +16,7 @@
 %%% <ul>
 %%% <li>Any input lists are changed to expect iterators.</li>
 %%% <li>Any output lists are changed to be iterators.</li>
-%%% <li>Any numeric counts for repition are changed to allow
+%%% <li>Any numeric counts for repetition are changed to allow
 %%% 'infinity' as values and to be able to return infinite
 %%% iterators.</li>
 %%% <li>On error, the same exception should be raised, though it may
@@ -27,12 +27,13 @@
 %%%
 %%% As few functions outside of `lists' have been implemented as
 %%% possible, in order to have the best chance of keeping the
-%%% namespace clean for future additions to the `lists' module.
+%%% namespace clean for future additions to the `lists' module. New
+%%% functionality is instead implemented in the `llists_utils' module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(llists).
 
--record(iterator, {next}).
+-include("include/llists.hrl").
 
 -type iterator() :: iterator(any()).
 -opaque iterator(Over) :: #iterator{next :: fun(() -> lazy_list(Over))}.
@@ -94,6 +95,8 @@
          sublist/3,
          takewhile/2,
          partition/2,
+         sort/1,
+         sort/2,
          split/2,
          splitwith/2,
          subtract/2,
@@ -132,8 +135,6 @@
          min/1,
          nth/2,
          prefix/2,
-         sort/1,
-         sort/2,
          search/2,
          suffix/2,
          sum/1]).
@@ -1042,6 +1043,35 @@ partition(Pred, #iterator{} = Iterator) ->
     {Satisfying, NotSatisfying}.
 
 %% @doc
+%% Returns an iterator containing the sorted elements of `Iterator1'.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec sort(Iterator1) -> Iterator2 when
+      Iterator1 :: iterator(Elem),
+      Iterator2 :: iterator(Elem).
+sort(#iterator{} = Iterator) ->
+    list_wrap(fun lists:sort/1, Iterator).
+
+%% @doc
+%% Returns an iterator containing the sorted elements of `Iterator1',
+%% according to the ordering function `Fun'. `Fun(A, B)' is to return
+%% `true' if `A' compares less than or equal to `B' in the ordering,
+%% otherwise `false'.
+%%
+%% The iterator is fully evaluated, infinite iterators will never
+%% return.
+%% @end
+-spec sort(Fun, Iterator1) -> Iterator2 when
+      Fun :: compare(A, B),
+      B :: A,
+      Iterator1 :: iterator(A),
+      Iterator2 :: iterator(A).
+sort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
+    list_wrap(fun (I) -> lists:sort(Fun, I) end, Iterator).
+
+%% @doc
 %% Splits `Iterator1' into `Iterator2' and `Iterator3'. `Iterator2'
 %% contains the first `N' elements and `Iterator3' the remaining
 %% elements (the `N'th tail).
@@ -1133,9 +1163,7 @@ subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
 %% equal, the tuple from `TupleIterator1' is picked and the one from
 %% `TupleIterator2' is deleted.
 %%
-%% The first element of each iterator will be evaluated. The previous
-%% element returned will be cached to check for uniqueness of future
-%% elements.
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec ukeymerge(N, TupleIterator1, TupleIterator2) -> TupleIterator3 when
       N :: pos_integer(),
@@ -1147,7 +1175,7 @@ subtract(#iterator{} = BaseIterator, #iterator{} = RemoveIterator) ->
 ukeymerge(N, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
     Equal = fun (A, B) -> element(N, A) == element(N, B) end,
     Compare = fun (A, B) -> element(N, A) =< element(N, B) end,
-    unique(Equal, fmerge(Compare, [Iterator1, Iterator2])).
+    ufmerge(Equal, Compare, [Iterator1, Iterator2]).
 
 %% @doc
 %% Returns a iterator containing the sorted elements of iterator
@@ -1173,15 +1201,13 @@ ukeysort(N, #iterator{} = Iterator) when N > 0 ->
 %% the element from the subiterator with the lowest position in
 %% `IteratorOfIterators' is picked and the other is deleted.
 %%
-%% The first element of each subiterator will be evaluated. The
-%% previous element returned will be cached to check for uniqueness of
-%% future elements.
+%% The first element of each subiterator will be evaluated.
 %% @end
 -spec umerge(IteratorOfIterators) -> Iterator when
       IteratorOfIterators :: iterator(iterator()),
       Iterator :: iterator().
 umerge(#iterator{} = IteratorOfIterators) ->
-    unique(fmerge(to_list(IteratorOfIterators))).
+    ufmerge(to_list(IteratorOfIterators)).
 
 %% @doc
 %% Returns the sorted iterator formed by merging `Iterator1' and
@@ -1190,16 +1216,14 @@ umerge(#iterator{} = IteratorOfIterators) ->
 %% elements compare equal, the element from `Iterator1' is picked and
 %% the one from `Iterator2' is deleted.
 %%
-%% The first element of each iterator will be evaluated. The previous
-%% element returned will be cached to check for uniqueness of future
-%% elements.
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec umerge(Iterator1, Iterator2) -> Iterator3 when
       Iterator1 :: iterator(A),
       Iterator2 :: iterator(B),
       Iterator3 :: iterator(A | B).
 umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
-    unique(fmerge([Iterator1, Iterator2])).
+    ufmerge([Iterator1, Iterator2]).
 
 %% @doc
 %% Returns the sorted iterator formed by merging `Iterator1' and
@@ -1210,9 +1234,7 @@ umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% `false'. When two elements compare equal, the element from
 %% `Iterator1' is picked and the one from `Iterator2' is deleted.
 %%
-%% The first element of each iterator will be evaluated. The previous
-%% element returned will be cached to check for uniqueness of future
-%% elements.
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec umerge(Fun, Iterator1, Iterator2) -> Iterator3 when
       Fun :: compare(A, B),
@@ -1220,7 +1242,9 @@ umerge(#iterator{} = Iterator1, #iterator{} = Iterator2) ->
       Iterator2 :: iterator(B),
       Iterator3 :: iterator(A | B).
 umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
-    unique(fmerge(Fun, [Iterator1, Iterator2])).
+    ufmerge(fun (A, B) -> Fun(A, B) andalso Fun(B, A) end,
+            Fun,
+            [Iterator1, Iterator2]).
 
 %% @doc
 %% Returns the sorted iterator formed by merging `Iterator1',
@@ -1231,9 +1255,7 @@ umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 %% otherwise the element from `Iterator2' is picked, and the other is
 %% deleted.
 %%
-%% The first element of each iterator will be evaluated. The previous
-%% element returned will be cached to check for uniqueness of future
-%% elements.
+%% The first element of each iterator will be evaluated.
 %% @end
 -spec umerge3(Iterator1, Iterator2, Iterator3) -> Iterator4 when
       Iterator1 :: iterator(A),
@@ -1243,7 +1265,7 @@ umerge(Fun, #iterator{} = Iterator1, #iterator{} = Iterator2) ->
 umerge3(#iterator{} = Iterator1,
         #iterator{} = Iterator2,
         #iterator{} = Iterator3) ->
-    unique(fmerge([Iterator1, Iterator2, Iterator3])).
+    ufmerge([Iterator1, Iterator2, Iterator3]).
 
 %% @doc
 %% "Unzips" a iterator of two-tuples into two iterators, where the
@@ -1792,35 +1814,6 @@ prefix(#iterator{} = Prefix, #iterator{} = Iterator) ->
     prefix_loop(next(Prefix), next(Iterator)).
 
 %% @doc
-%% Returns an iterator containing the sorted elements of `Iterator1'.
-%%
-%% The iterator is fully evaluated, infinite iterators will never
-%% return.
-%% @end
--spec sort(Iterator1) -> Iterator2 when
-      Iterator1 :: iterator(Elem),
-      Iterator2 :: iterator(Elem).
-sort(#iterator{} = Iterator) ->
-    list_wrap(fun lists:sort/1, Iterator).
-
-%% @doc
-%% Returns an iterator containing the sorted elements of `Iterator1',
-%% according to the ordering function `Fun'. `Fun(A, B)' is to return
-%% `true' if `A' compares less than or equal to `B' in the ordering,
-%% otherwise `false'.
-%%
-%% The iterator is fully evaluated, infinite iterators will never
-%% return.
-%% @end
--spec sort(Fun, Iterator1) -> Iterator2 when
-      Fun :: compare(A, B),
-      B :: A,
-      Iterator1 :: iterator(A),
-      Iterator2 :: iterator(A).
-sort(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
-    list_wrap(fun (I) -> lists:sort(Fun, I) end, Iterator).
-
-%% @doc
 %% If there is a `Value' in `Iterator' such that `Pred(Value)' returns `true',
 %% returns `{value, Value}' for the first such `Value', otherwise returns
 %% `false'.
@@ -1907,14 +1900,17 @@ fmerge(IteratorOfIterators) ->
 %% delegates to a similarly named function to handle merging with an
 %% ordering function.
 %% @end
-fmerge(Fun, ListOfIterators) when is_function(Fun, 2) ->
+fmerge(Compare, ListOfIterators) when is_function(Compare, 2) ->
     LazyLists = [Next || Iterator <- ListOfIterators,
                          Next <- [next(Iterator)],
                          Next /= []],
     unfold(fun ([]) ->
                    none;
                ([_ | _] = Lists) ->
-                   fmerge_sort(Fun, Lists)
+                   {Smallest, {Found,
+                               FoundBefore,
+                               FoundAfter}} = fmerge_sort(Compare, Lists),
+                   {Smallest, fmerge_next(Found, FoundBefore, FoundAfter)}
            end,
            lists:reverse(LazyLists)).
 
@@ -1933,7 +1929,7 @@ fmerge_sort(Fun, [Smallest | FoundAfter] = After) ->
     fmerge_sort(Fun, [], After, {Smallest, [], FoundAfter}).
 
 fmerge_sort(_Fun, _Before, [], {[Smallest | Iterator], FoundBefore, FoundAfter}) ->
-    {Smallest, fmerge_next(Iterator, lists:reverse(FoundBefore), FoundAfter)};
+    {Smallest, {Iterator, lists:reverse(FoundBefore), FoundAfter}};
 fmerge_sort(Fun, Before, [Compare | After], {Smallest, _, _} = Found) ->
     case fmerge_compare(Fun, Compare, Smallest) of
         true ->
@@ -1943,40 +1939,58 @@ fmerge_sort(Fun, Before, [Compare | After], {Smallest, _, _} = Found) ->
     end.
 
 %% @private
-%% @see unique/2
-unique(#iterator{} = Iterator) ->
-    unique(fun erlang:'=='/2, Iterator).
+%% @see ufmerge/3
+ufmerge(IteratorOfIterators) ->
+    ufmerge(fun (A, B) -> A == B end,
+           fun (A, B) -> A =< B end,
+           IteratorOfIterators).
 
 %% @private
 %% @doc
-%% Discards non-unique values in a sorted iterator according to a
-%% provided equality function `Fun(A, B)' which should return `true'
-%% when `A' and `B' are equal and `false' otherwise. Expected to
-%% implement the required uniqueness for `umerge/1' and friends.
+%% Merge a list of iterators according to an ordering function which
+%% returns `true' when the first element is less than or equal to the
+%% second, `false' otherwise. Discards duplicates across iterators
+%% according to an equality function. All iterators are expected to be
+%% already ordered and without duplicates.
 %%
-%% If a value compares equal to the previously returned value, it is
-%% skipped.
+%% This preserves the `lists' invariant that the leftmost iterator is
+%% chosen when values are equal. It is not able to replicate the
+%% behaviour of merge when given (invalid) unordered lists or
+%% (invalid) lists with duplicates. Divergence appears to be easiest
+%% to replicate with input like:
+%% `[[0, 0], [0, 0]]'.
+%%
+%% It was very tempting to instead name this fumerge, as replicating
+%% undocumented merge behaviour from the `lists' module has proven to
+%% be far more difficult than expected.
 %% @end
-unique(Fun, #iterator{} = Iterator) when is_function(Fun, 2) ->
-    unfold(fun Next({_Prev, []}) ->
+ufmerge(Equal, Compare, ListOfIterators) when
+      is_function(Equal, 2), is_function(Compare, 2) ->
+    LazyLists = [Next || Iterator <- ListOfIterators,
+                         Next <- [next(Iterator)],
+                         Next /= []],
+    unfold(fun ([]) ->
                    none;
-               Next({Prev, #iterator{} = FoldIterator}) ->
-                   case {Prev, next(FoldIterator)}  of
-                       {_Prev, []} ->
-                           none;
-                       {first, [Elem | #iterator{} = NextIterator]} ->
-                           {Elem, {{previous, Elem}, NextIterator}};
-                       {{previous, PrevElem} = Prev,
-                        [Elem | #iterator{} = NextIterator]} ->
-                           case Fun(Elem, PrevElem) of
-                               true ->
-                                   Next({Prev, NextIterator});
-                               false ->
-                                   {Elem, {{previous, Elem}, NextIterator}}
-                           end
-                   end
+               ([_ | _] = Lists) ->
+                   {Smallest, {Found,
+                               FoundBefore,
+                               FoundAfter}} = fmerge_sort(Compare, Lists),
+                   UniqueBefore = ufmerge_skip(Equal, Smallest, FoundBefore),
+                   UniqueAfter = ufmerge_skip(Equal, Smallest, FoundAfter),
+                   {Smallest, fmerge_next(Found, UniqueBefore, UniqueAfter)}
            end,
-           {first, Iterator}).
+           lists:reverse(LazyLists)).
+
+ufmerge_skip(Equal, Smallest, LazyLists) ->
+    [LazyList ||
+     [Elem | Iterator] <- LazyLists,
+     LazyList <- [case Equal(Elem, Smallest) of
+                      true ->
+                          next(Iterator);
+                      false ->
+                          [Elem | Iterator]
+                  end],
+     LazyList /= []].
 
 nthtail_loop(0, #iterator{} = Iterator) ->
     Iterator;

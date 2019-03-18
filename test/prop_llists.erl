@@ -311,6 +311,20 @@ prop_partition() ->
                 lists:partition(Pred, List)
             end).
 
+prop_sort_1() ->
+    ?FORALL(List,
+            list(),
+            list_wrap(fun llists:sort/1, List) ==
+            lists:sort(List)).
+
+prop_sort_2() ->
+    % Reverse of default ordering.
+    Compare = fun (A, B) -> A > B end,
+    ?FORALL(List,
+            list(),
+            list_wrap(fun (L) -> llists:sort(Compare, L) end, List) ==
+            lists:sort(Compare, List)).
+
 prop_split() ->
     ?FORALL({N, List},
             ?LET(List, list(), {integer(0, length(List)), List}),
@@ -340,17 +354,97 @@ prop_subtract() ->
                                            llists:from_list(List2))) ==
             lists:subtract(List1, List2)).
 
+% I'm unable to duplicate the undocumented behaviour for the unique
+% merge functions in list. They require both sorted and unique input,
+% and they behaviour when those are not present is fairly complicated.
+% As such, the following properties all restrict themselves to only
+% valid inputs.
+
 prop_ukeymerge() ->
     ?FORALL({N, List1, List2},
             ?LET({N, List},
                  key_list(),
                  {N,
-                  keysortedish(N, List),
-                  keysortedish(N, key_list(any(), N))}),
+                  ukeysorted(N, List),
+                  ukeysorted(N, key_list(any(), N))}),
             llists:to_list(llists:ukeymerge(N,
-                                           llists:from_list(List1),
-                                           llists:from_list(List2))) ==
+                                            llists:from_list(List1),
+                                            llists:from_list(List2))) ==
             lists:ukeymerge(N, List1, List2)).
+
+prop_ukeysort() ->
+    ?FORALL({N, List1},
+            key_list(),
+            llists:to_list(llists:ukeysort(N, llists:from_list(List1))) ==
+            lists:ukeysort(N, List1)).
+
+prop_umerge_1() ->
+    ?FORALL(List,
+            list(usorted(list())),
+            begin
+                Iterators = [llists:from_list(L) || L <- List],
+                list_wrap(fun llists:umerge/1, Iterators) ==
+                lists:umerge(List)
+            end).
+
+prop_umerge_2() ->
+    ?FORALL({List1, List2},
+            {usorted(list()), usorted(list())},
+            llists:to_list(llists:umerge(llists:from_list(List1),
+                                         llists:from_list(List2))) ==
+            lists:umerge(List1, List2)).
+
+prop_umerge_3() ->
+    % Reverse of default ordering.
+    Compare = fun (A, B) -> A > B end,
+    ?FORALL({List1, List2},
+            {reversed(usorted(list())), reversed(usorted(list()))},
+            llists:to_list(llists:umerge(Compare,
+                                         llists:from_list(List1),
+                                         llists:from_list(List2))) ==
+            lists:umerge(Compare, List1, List2)).
+
+prop_umerge3() ->
+    ?FORALL({List1, List2, List3},
+            {usorted(list()), usorted(list()), usorted(list())},
+            llists:to_list(llists:umerge3(llists:from_list(List1),
+                                          llists:from_list(List2),
+                                          llists:from_list(List3))) ==
+            lists:umerge3(List1, List2, List3)).
+
+prop_unzip() ->
+    ?FORALL(List,
+            list({any(), any()}),
+            begin
+                {First, Second} = llists:unzip(llists:from_list(List)),
+                {llists:to_list(First), llists:to_list(Second)} ==
+                lists:unzip(List)
+            end).
+
+prop_unzip3() ->
+    ?FORALL(List,
+            list({any(), any(), any()}),
+            begin
+                {First, Second, Third} = llists:unzip3(llists:from_list(List)),
+                {llists:to_list(First),
+                 llists:to_list(Second),
+                 llists:to_list(Third)} ==
+                lists:unzip3(List)
+            end).
+
+prop_usort_1() ->
+    ?FORALL(List,
+            list(),
+            list_wrap(fun llists:usort/1, List) ==
+            lists:usort(List)).
+
+prop_usort_2() ->
+    % Reverse of default ordering.
+    Compare = fun (A, B) -> A > B end,
+    ?FORALL(List,
+            list(),
+            list_wrap(fun (L) -> llists:usort(Compare, L) end, List) ==
+            lists:usort(Compare, List)).
 
 %%%===================================================================
 %%% Generators
@@ -380,16 +474,6 @@ deep_list() ->
     list(frequency([{1, small_list(union([any(), small_list()]))},
                     {8, small_list()},
                     {4, any()}])).
-
-index_list() ->
-    index_list(any()).
-
-index_list(Of) ->
-    % Return a random index into a list and a list long enough to
-    % contain that index.
-    ?LET(Length,
-         non_neg_integer(),
-         {integer(1, Length), resize(Length, list(Of))}).
 
 key_list() ->
     key_list(any()).
@@ -448,6 +532,12 @@ keysorted(N, List) ->
 keysortedish(N, List) ->
     frequency([{10, keysorted(N, List)},
                {1, List}]).
+
+usorted(List) ->
+    ?LET(L, List, lists:usort(L)).
+
+ukeysorted(N, List) ->
+    ?LET(L, List, lists:ukeysort(N, L)).
 
 %%%===================================================================
 %%% Internal Functions
