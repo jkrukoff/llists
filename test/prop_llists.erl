@@ -257,9 +257,7 @@ prop_merge3() ->
 
 prop_nthtail() ->
     ?FORALL({N, List},
-            ?LET(Length,
-                 non_neg_integer(),
-                 {integer(0, Length), lists:duplicate(Length, any())}),
+            ?LET(L, list(), {integer(0, length(L)), L}),
             list_wrap(fun (L) -> llists:nthtail(N, L) end, List) ==
             lists:nthtail(N, List)).
 
@@ -446,6 +444,191 @@ prop_usort_2() ->
             list_wrap(fun (L) -> llists:usort(Compare, L) end, List) ==
             lists:usort(Compare, List)).
 
+prop_zip() ->
+    ?FORALL({List1, List2},
+            ?LET(L, list(), {L, list(any(), length(L))}),
+            llists:to_list(llists:zip(llists:from_list(List1),
+                                      llists:from_list(List2))) ==
+            lists:zip(List1, List2)).
+
+prop_zip3() ->
+    ?FORALL({List1, List2, List3},
+            ?LET(L,
+                 list(),
+                 {L, list(any(), length(L)), list(any(), length(L))}),
+            llists:to_list(llists:zip3(llists:from_list(List1),
+                                       llists:from_list(List2),
+                                       llists:from_list(List3))) ==
+            lists:zip3(List1, List2, List3)).
+
+prop_zipwith() ->
+    ?FORALL({Combine, List1, List2},
+            ?LET(L, list(), {function(2, any()), L, list(any(), length(L))}),
+            llists:to_list(llists:zipwith(Combine,
+                                          llists:from_list(List1),
+                                          llists:from_list(List2))) ==
+            lists:zipwith(Combine, List1, List2)).
+
+prop_zipwith3() ->
+    ?FORALL({Combine, List1, List2, List3},
+            ?LET(L,
+                 list(),
+                 {function(3, any()),
+                  L,
+                  list(any(), length(L)),
+                  list(any(), length(L))}),
+            llists:to_list(llists:zipwith3(Combine,
+                                          llists:from_list(List1),
+                                          llists:from_list(List2),
+                                          llists:from_list(List3))) ==
+            lists:zipwith3(Combine, List1, List2, List3)).
+
+prop_length() ->
+    ?FORALL(List,
+            list(),
+            llists:length(llists:from_list(List)) ==
+            erlang:length(List)).
+
+prop_all() ->
+    ?FORALL({Pred, List},
+            {function(1, boolean()), list()},
+            llists:all(Pred, llists:from_list(List)) ==
+            lists:all(Pred, List)).
+
+prop_any() ->
+    ?FORALL({Pred, List},
+            {function(1, boolean()), list()},
+            llists:any(Pred, llists:from_list(List)) ==
+            lists:any(Pred, List)).
+
+prop_concat() ->
+    ?FORALL(List,
+            list(union([atom(), integer(), float(), string()])),
+            llists:concat(llists:from_list(List)) ==
+            lists:concat(List)).
+
+prop_foldl() ->
+    ?FORALL({Fold, Acc0, List},
+            {function(2, any()), any(), list()},
+            llists:foldl(Fold, Acc0, llists:from_list(List)) ==
+            lists:foldl(Fold, Acc0, List)).
+
+prop_foldr() ->
+    ?FORALL({Fold, Acc0, List},
+            {function(2, any()), any(), list()},
+            llists:foldr(Fold, Acc0, llists:from_list(List)) ==
+            lists:foldr(Fold, Acc0, List)).
+
+prop_foreach() ->
+    ?FORALL({For, List},
+            {function(1, any()), list()},
+            llists:foreach(For, llists:from_list(List)) ==
+            lists:foreach(For, List)).
+
+prop_keyfind() ->
+    ?FORALL({Key, {N, List}},
+            frequency([{5, ?LET(Elem, any(), {Elem, contains_key(Elem)})},
+                       {1, {any(), {pos_integer(), list(tuplish())}}}]),
+            llists:keyfind(Key, N, llists:from_list(List)) ==
+            lists:keyfind(Key, N, List)).
+
+prop_keymember() ->
+    ?FORALL({Key, {N, List}},
+            frequency([{5, ?LET(Elem, any(), {Elem, contains_key(Elem)})},
+                       {1, {any(), {pos_integer(), list(tuplish())}}}]),
+            llists:keymember(Key, N, llists:from_list(List)) ==
+            lists:keymember(Key, N, List)).
+
+prop_keysearch() ->
+    ?FORALL({Key, {N, List}},
+            frequency([{5, ?LET(Elem, any(), {Elem, contains_key(Elem)})},
+                       {1, {any(), {pos_integer(), list(tuplish())}}}]),
+            llists:keysearch(Key, N, llists:from_list(List)) ==
+            lists:keysearch(Key, N, List)).
+
+prop_last() ->
+    ?FORALL(List,
+            non_empty(list()),
+            llists:last(llists:from_list(List)) ==
+            lists:last(List)).
+
+prop_mapfoldl() ->
+    ?FORALL({MapFold, Acc0, List},
+            {function(2, {any(), any()}), any(), list()},
+            begin
+                {Fold, Acc} = llists:mapfoldl(MapFold,
+                                              Acc0,
+                                              llists:from_list(List)),
+                {llists:to_list(Fold), Acc} ==
+                lists:mapfoldl(MapFold, Acc0, List)
+            end).
+
+prop_mapfoldr() ->
+    ?FORALL({MapFold, Acc0, List},
+            {function(2, {any(), any()}), any(), list()},
+            begin
+                {Fold, Acc} = llists:mapfoldr(MapFold,
+                                              Acc0,
+                                              llists:from_list(List)),
+                {llists:to_list(Fold), Acc} ==
+                lists:mapfoldr(MapFold, Acc0, List)
+            end).
+
+prop_max() ->
+    ?FORALL(List,
+            non_empty(list()),
+            llists:max(llists:from_list(List)) ==
+            lists:max(List)).
+
+prop_member() ->
+    ?FORALL({Elem, List},
+            frequency([{5, ?LET(Elem, any(), {Elem, contains(Elem)})},
+                       {1, {any(), list()}}]),
+            llists:member(Elem, llists:from_list(List)) ==
+            lists:member(Elem, List)).
+
+prop_min() ->
+    ?FORALL(List,
+            non_empty(list()),
+            llists:min(llists:from_list(List)) ==
+            lists:min(List)).
+
+prop_nth() ->
+    ?FORALL({N, List},
+            ?LET(L, non_empty(list()), {integer(1, length(L)), L}),
+            llists:nth(N, llists:from_list(List)) ==
+            lists:nth(N, List)).
+
+prop_prefix() ->
+    ?FORALL({List1, List2},
+            frequency([{1, ?LET({List1, List2},
+                                {list(), list()},
+                                {List1, List1 ++ List2})},
+                       {1, {list(), list()}}]),
+            llists:prefix(llists:from_list(List1), llists:from_list(List2)) ==
+            lists:prefix(List1, List2)).
+
+prop_search() ->
+    ?FORALL({Pred, List},
+            {function(1, boolean()), list()},
+            llists:search(Pred, llists:from_list(List)) ==
+            lists:search(Pred, List)).
+
+prop_suffix() ->
+    ?FORALL({List1, List2},
+            frequency([{1, ?LET({List1, List2},
+                                {list(), list()},
+                                {List1, List2 ++ List1})},
+                       {1, {list(), list()}}]),
+            llists:suffix(llists:from_list(List1), llists:from_list(List2)) ==
+            lists:suffix(List1, List2)).
+
+prop_sum() ->
+    ?FORALL(List,
+            list(number()),
+            llists:sum(llists:from_list(List)) ==
+            lists:sum(List)).
+
 %%%===================================================================
 %%% Generators
 %%%===================================================================
@@ -463,6 +646,9 @@ sign(Of) when Of >= 0 ->
     pos_integer();
 sign(Of) when Of < 0 ->
     neg_integer().
+
+list(Of, Length) ->
+    ?LET(L, Length, lists:duplicate(L, Of)).
 
 small_list() ->
     small_list(any()).
@@ -485,7 +671,9 @@ key_list(Of) ->
          {Length, key_list(Of, Length)}).
 
 key_list(Of, Length) ->
-    list(list_to_tuple(lists:duplicate(Length, Of))).
+    ?LET(L,
+         Length,
+         list(list_to_tuple(lists:duplicate(L, Of)))).
 
 tuplish() ->
     frequency([{5, tuple()},

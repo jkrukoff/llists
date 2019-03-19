@@ -1,6 +1,8 @@
 %%%-------------------------------------------------------------------
 %%% @doc
-%%%
+%%% Additional iterator utilities that are not replicas of `lists'
+%%% module functionality. These functions are kept separate to avoid
+%%% any future name clashes with additions to the stdlib.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(llists_utils).
@@ -24,6 +26,9 @@
 cycle(Iterator) ->
     llists:append(llists:duplicate(infinity, Iterator)).
 
+%% @doc
+%% As `unique/2', but with `==' as a equality function.
+%% @end
 %% @see unique/2
 -spec unique(Iterator1) -> Iterator2 when
       Iterator1 :: llists:iterator(Elem),
