@@ -44,7 +44,8 @@ prop_group() ->
                 Lengths = [length(G) || G <- Groups],
                 % Groups should all be less than or equal to expected
                 % length.
-                IsExpectedLength = lists:all(fun (L) -> L =< Length end, Lengths),
+                IsExpectedLength = lists:all(fun (L) -> L =< Length end,
+                                             Lengths),
                 % Groups should never be empty.
                 IsNotEmpty = lists:all(fun (L) -> L /= 0 end, Lengths),
                 % All elements should be present.
