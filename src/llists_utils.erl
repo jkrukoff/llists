@@ -43,7 +43,7 @@ cycle(Iterator) ->
 group(Length, Iterator) when Length > 0 ->
     true = llists:is_iterator(Iterator),
     llists:unfold(fun (FoldIterator) ->
-                          group_unfold(Length, [], FoldIterator)
+                          group_loop(Length, [], FoldIterator)
                   end,
                   Iterator).
 
@@ -66,7 +66,7 @@ group(Length, Iterator) when Length > 0 ->
 groupwith(Pred, Iterator) when is_function(Pred, 1) ->
     true = llists:is_iterator(Iterator),
     llists:unfold(fun (FoldIterator) ->
-                          groupwith_unfold(Pred, [], FoldIterator)
+                          groupwith_loop(Pred, [], FoldIterator)
                   end,
                   Iterator).
 
@@ -123,23 +123,23 @@ unique(Fun, Iterator) when is_function(Fun, 2) ->
 %%% Internal Functions
 %%%===================================================================
 
-group_unfold(_N, _Acc, none) ->
+group_loop(_N, _Acc, none) ->
     none;
-group_unfold(0, Acc, Iterator) ->
+group_loop(0, Acc, Iterator) ->
     {lists:reverse(Acc), Iterator};
-group_unfold(N, Acc, Iterator) when N > 0 ->
+group_loop(N, Acc, Iterator) when N > 0 ->
     case {Acc, llists:next(Iterator)} of
         {[], []} ->
             none;
         {_, []} ->
             {lists:reverse(Acc), none};
         {_, [Elem | NextIterator]} ->
-            group_unfold(N - 1, [Elem | Acc], NextIterator)
+            group_loop(N - 1, [Elem | Acc], NextIterator)
     end.
 
-groupwith_unfold(_Pred, _Acc, none) ->
+groupwith_loop(_Pred, _Acc, none) ->
     none;
-groupwith_unfold(Pred, Acc, Iterator) ->
+groupwith_loop(Pred, Acc, Iterator) ->
     case {Acc, llists:next(Iterator)} of
         {[], []} ->
             none;
@@ -150,6 +150,6 @@ groupwith_unfold(Pred, Acc, Iterator) ->
                 true ->
                     {lists:reverse([Elem | Acc]), NextIterator};
                 false ->
-                    groupwith_unfold(Pred, [Elem | Acc], NextIterator)
+                    groupwith_loop(Pred, [Elem | Acc], NextIterator)
             end
     end.
