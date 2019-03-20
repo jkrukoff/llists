@@ -19,6 +19,41 @@ cycle_test() ->
                        llists:from_list([1, 2, 3])),
                      5))).
 
+group_test_() ->
+    [?_assertEqual([],
+                   llists:to_list(
+                     llists_utils:group(
+                       2,
+                       llists:from_list([])))),
+     ?_assertEqual([[1, 2], [3]],
+                   llists:to_list(
+                     llists_utils:group(
+                       2,
+                       llists:from_list([1, 2, 3])))),
+     ?_assertEqual([[1, 2], [3, 4]],
+                   llists:to_list(
+                     llists_utils:group(
+                       2,
+                       llists:from_list([1, 2, 3, 4]))))].
+
+groupwith_test_() ->
+    IsEven = fun (Elem) -> Elem rem 2 == 0 end,
+    [?_assertEqual([],
+                   llists:to_list(
+                     llists_utils:groupwith(
+                       IsEven,
+                       llists:from_list([])))),
+     ?_assertEqual([[1, 2], [3]],
+                   llists:to_list(
+                     llists_utils:groupwith(
+                       IsEven,
+                       llists:from_list([1, 2, 3])))),
+     ?_assertEqual([[1, 2], [3, 4]],
+                   llists:to_list(
+                     llists_utils:groupwith(
+                       IsEven,
+                       llists:from_list([1, 2, 3, 4]))))].
+
 unique_1_test() ->
     ?assertEqual([1, 2, 3, 2, 1],
                  llists:to_list(
