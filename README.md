@@ -1,6 +1,6 @@
 # llists #
 
-![Lazy Construction Worker](lazy.png)
+![Lazy Construction Worker](doc/lazy.png)
 
 
 ### Overview ###
