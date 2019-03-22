@@ -181,7 +181,7 @@ keydelete_test() ->
                      llists:from_list([one, {two, 2}, {three, 3}])))).
 
 keymap_test() ->
-    ?assertEqual([{name, "jane", 22},{name, "lizzie", 20},{name, "lydia", 15}],
+    ?assertEqual([{name, "jane", 22}, {name, "lizzie", 20}, {name, "lydia", 15}],
                  llists:to_list(
                    llists:keymap(
                      fun erlang:atom_to_list/1,
@@ -189,13 +189,20 @@ keymap_test() ->
                      llists:from_list(
                        [{name, jane, 22}, {name, lizzie, 20}, {name, lydia, 15}])))).
 
-keymerge_test() ->
-    ?assertEqual([{name, jane, 22},{name, lizzie, 20},{name, lydia, 15}],
-                 llists:to_list(
-                   llists:keymerge(
-                     2,
-                     llists:from_list([{name, jane, 22}]),
-                     llists:from_list([{name, lizzie, 20}, {name, lydia, 15}])))).
+keymerge_test_() ->
+    [?_assertEqual([{name, jane, 22}, {name, lizzie, 20}, {name, lydia, 15}],
+                   llists:to_list(
+                     llists:keymerge(
+                       2,
+                       llists:from_list([{name, jane, 22}]),
+                       llists:from_list([{name, lizzie, 20}, {name, lydia, 15}])))),
+     {"Select from first list before second list.",
+      ?_assertEqual([{1, one}, {1, three}, {2, two}, {2, four}],
+                    llists:to_list(
+                      llists:keymerge(
+                        1,
+                        llists:from_list([{1, one}, {2, two}]),
+                        llists:from_list([{1, three}, {2, four}]))))}].
 
 keyreplace_test() ->
     ?assertEqual([one, {replaced}, {three, 3}],

@@ -19,7 +19,27 @@ These iterators are then used to provide a version of the stdlib
 when demanded.
 
 Several simple iterator constructors are provided as well as a
-general purpose `unfold/2` constructor.
+general purpose `unfold/2` constructor. Conversion to built in
+types for lists and maps as the `from_list/1`, `to_list/1`,
+`from_map/1` and `to_map/1` functions.
+
+Iterators are evaluated using the `next/1` function to evaluate
+the next element of the iterator. The output of the next function
+is a lazy list: either an improper list of the element and the
+continuation or an empty list. Many additional iterator
+transformation and evaluation functions are also present.
+
+In general, iterators are not expected to be pure functions.
+Iterator transformations and evaluations should all evaluate each
+element exactly once per output iterator (though not all elements
+may be returned, depending on the function). This implies that
+impure iterators should not be used with functions which return
+multiple iterators if all iterators are to be evaluated.
+
+Many of the functions here are unsafe to use with infinite
+iterators and will either fail to return on the initial call or on
+the first attempt to evaluate an element of the iterator. Read the
+documentation carefully when working with such iterators.
 
 The interface for this module attempts to follow the `lists`
 behaviour as closely as possible. Guidelines for how past and
@@ -29,7 +49,10 @@ future translation is performed is as follows:
 
 * Any output lists are changed to be iterators.
 
-* Any numeric counts for repition are changed to allow
+* Elements of input iterators should be evaluated exactly
+once per output iterator.
+
+* Any numeric counts for repetition are changed to allow
 'infinity' as values and to be able to return infinite
 iterators.
 
@@ -41,8 +64,9 @@ evaluated.
 
 
 As few functions outside of `lists` have been implemented as
-possible, in order to have the best chance of keeping the
-namespace clean for future additions to the `lists` module.
+possible in order to have the best chance of keeping the namespace
+clean for future additions to the `lists` module. New
+functionality is instead implemented in the `llists_utils` module.
 <a name="types"></a>
 
 ## Data Types ##
@@ -1243,6 +1267,10 @@ Examples:
 
 For a different way to partition a list, see splitwith/2.
 
+Each result iterator will evaluate elements of the original
+iterator independently. If both are evaluated, this will result in
+all elements being evaluated twice.
+
 __See also:__ [splitwith/2](#splitwith-2).
 
 <a name="prefix-2"></a>
@@ -1612,9 +1640,7 @@ duplicates before evaluating this function. When two tuples compare
 equal, the tuple from `TupleIterator1` is picked and the one from
 `TupleIterator2` is deleted.
 
-The first element of each iterator will be evaluated. The previous
-element returned will be cached to check for uniqueness of future
-elements.
+The first element of each iterator will be evaluated.
 
 <a name="ukeysort-2"></a>
 
@@ -1650,9 +1676,7 @@ before evaluating this function. When two elements compare equal,
 the element from the subiterator with the lowest position in
 `IteratorOfIterators` is picked and the other is deleted.
 
-The first element of each subiterator will be evaluated. The
-previous element returned will be cached to check for uniqueness of
-future elements.
+The first element of each subiterator will be evaluated.
 
 <a name="umerge-2"></a>
 
@@ -1670,9 +1694,7 @@ contain no duplicates before evaluating this function. When two
 elements compare equal, the element from `Iterator1` is picked and
 the one from `Iterator2` is deleted.
 
-The first element of each iterator will be evaluated. The previous
-element returned will be cached to check for uniqueness of future
-elements.
+The first element of each iterator will be evaluated.
 
 <a name="umerge-3"></a>
 
@@ -1692,9 +1714,7 @@ before evaluating this function. `Fun(A, B)` is to return `true` if
 `false`. When two elements compare equal, the element from
 `Iterator1` is picked and the one from `Iterator2` is deleted.
 
-The first element of each iterator will be evaluated. The previous
-element returned will be cached to check for uniqueness of future
-elements.
+The first element of each iterator will be evaluated.
 
 <a name="umerge3-3"></a>
 
@@ -1714,9 +1734,7 @@ element from `Iterator1` is picked if there is such an element,
 otherwise the element from `Iterator2` is picked, and the other is
 deleted.
 
-The first element of each iterator will be evaluated. The previous
-element returned will be cached to check for uniqueness of future
-elements.
+The first element of each iterator will be evaluated.
 
 <a name="unfold-2"></a>
 
