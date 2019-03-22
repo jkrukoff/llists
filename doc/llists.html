@@ -22,7 +22,27 @@
 when demanded.</p>
   
    <p>Several simple iterator constructors are provided as well as a
-   general purpose <code>unfold/2</code> constructor.</p>
+   general purpose <code>unfold/2</code> constructor. Conversion to built in
+   types for lists and maps as the <code>from_list/1</code>, <code>to_list/1</code>,
+   <code>from_map/1</code> and <code>to_map/1</code> functions.</p>
+  
+   <p>Iterators are evaluated using the <code>next/1</code> function to evaluate   
+the next element of the iterator. The output of the next function   
+is a lazy list: either an improper list of the element and the   
+continuation or an empty list. Many additional iterator   
+transformation and evaluation functions are also present.</p>
+  
+   <p>In general, iterators are not expected to be pure functions.   
+Iterator transformations and evaluations should all evaluate each   
+element exactly once per output iterator (though not all elements   
+may be returned, depending on the function). This implies that   
+impure iterators should not be used with functions which return   
+multiple iterators if all iterators are to be evaluated.</p>
+  
+   <p>Many of the functions here are unsafe to use with infinite   
+iterators and will either fail to return on the initial call or on   
+the first attempt to evaluate an element of the iterator. Read the   
+documentation carefully when working with such iterators.</p>
   
    <p>The interface for this module attempts to follow the <code>lists</code>   
 behaviour as closely as possible. Guidelines for how past and   
@@ -31,7 +51,9 @@ future translation is performed is as follows:</p>
    <ul>
    <li>Any input lists are changed to expect iterators.</li>
    <li>Any output lists are changed to be iterators.</li>
-   <li>Any numeric counts for repition are changed to allow
+   <li>Elements of input iterators should be evaluated exactly
+   once per output iterator.</li>
+   <li>Any numeric counts for repetition are changed to allow
    'infinity' as values and to be able to return infinite
    iterators.</li>
    <li>On error, the same exception should be raised, though it may
@@ -41,8 +63,9 @@ future translation is performed is as follows:</p>
    </ul>
   
    As few functions outside of <code>lists</code> have been implemented as
-   possible, in order to have the best chance of keeping the
-   namespace clean for future additions to the <code>lists</code> module.
+   possible in order to have the best chance of keeping the namespace
+   clean for future additions to the <code>lists</code> module. New
+   functionality is instead implemented in the <code>llists_utils</code> module.
 <h2><a name="types">Data Types</a></h2>
 
 <h3 class="typedecl"><a name="type-accumulator">accumulator()</a></h3>
@@ -953,7 +976,11 @@ or an empty list if iteration is complete.</p>
   &gt; {llists:to_list(Satisfying), llists:to_list(NotSatisfying)}.
   {[a,b,c,d,e],[1,2,3,4]}</pre>
  
-  For a different way to partition a list, see splitwith/2.</p>
+  <p>For a different way to partition a list, see splitwith/2.</p>
+ 
+  Each result iterator will evaluate elements of the original
+  iterator independently. If both are evaluated, this will result in
+  all elements being evaluated twice.</p>
 <p><b>See also:</b> <a href="#splitwith-2">splitwith/2</a>.</p>
 
 <h3 class="function"><a name="prefix-2">prefix/2</a></h3>
@@ -1203,9 +1230,7 @@ return.</p>
   equal, the tuple from <code>TupleIterator1</code> is picked and the one from
   <code>TupleIterator2</code> is deleted.</p>
  
-  The first element of each iterator will be evaluated. The previous
-  element returned will be cached to check for uniqueness of future
-  elements.</p>
+  The first element of each iterator will be evaluated.</p>
 
 <h3 class="function"><a name="ukeysort-2">ukeysort/2</a></h3>
 <div class="spec">
@@ -1231,9 +1256,7 @@ return.</p>
   the element from the subiterator with the lowest position in
   <code>IteratorOfIterators</code> is picked and the other is deleted.</p>
  
-  The first element of each subiterator will be evaluated. The
-  previous element returned will be cached to check for uniqueness of
-  future elements.</p>
+  The first element of each subiterator will be evaluated.</p>
 
 <h3 class="function"><a name="umerge-2">umerge/2</a></h3>
 <div class="spec">
@@ -1246,9 +1269,7 @@ return.</p>
   elements compare equal, the element from <code>Iterator1</code> is picked and
   the one from <code>Iterator2</code> is deleted.</p>
  
-  The first element of each iterator will be evaluated. The previous
-  element returned will be cached to check for uniqueness of future
-  elements.</p>
+  The first element of each iterator will be evaluated.</p>
 
 <h3 class="function"><a name="umerge-3">umerge/3</a></h3>
 <div class="spec">
@@ -1263,9 +1284,7 @@ return.</p>
   <code>false</code>. When two elements compare equal, the element from
   <code>Iterator1</code> is picked and the one from <code>Iterator2</code> is deleted.</p>
  
-  The first element of each iterator will be evaluated. The previous
-  element returned will be cached to check for uniqueness of future
-  elements.</p>
+  The first element of each iterator will be evaluated.</p>
 
 <h3 class="function"><a name="umerge3-3">umerge3/3</a></h3>
 <div class="spec">
@@ -1280,9 +1299,7 @@ return.</p>
   otherwise the element from <code>Iterator2</code> is picked, and the other is  
 deleted.</p>
  
-  The first element of each iterator will be evaluated. The previous
-  element returned will be cached to check for uniqueness of future
-  elements.</p>
+  The first element of each iterator will be evaluated.</p>
 
 <h3 class="function"><a name="unfold-2">unfold/2</a></h3>
 <div class="spec">

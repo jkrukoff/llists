@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module llists_utils</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module llists_utils</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+   Additional iterator utilities that are not replicas of <code>lists</code>
+   module functionality.
+
+
+<h2><a name="description">Description</a></h2>
+   Additional iterator utilities that are not replicas of <code>lists</code>
+   module functionality. These functions are kept separate to avoid
+   any future name clashes with additions to the stdlib.
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cycle-1">cycle/1</a></td><td>
+  Create an infinite iterator that repeatedly returns the sequence of
+  elements in the given iterator.</td></tr>
+<tr><td valign="top"><a href="#group-2">group/2</a></td><td>
+  Create an iterator that returns groups of elements from <code>Iterator1</code>
+  as a list of at least <code>Length</code> elements.</td></tr>
+<tr><td valign="top"><a href="#groupwith-2">groupwith/2</a></td><td>
+  Create an iterator that returns groups of elements from <code>Iterator1</code>
+  based on the return value of <code>Pred(Elem)</code>.</td></tr>
+<tr><td valign="top"><a href="#unique-1">unique/1</a></td><td>
+  As <code>unique/2</code>, but with <code>==</code> as a equality function.</td></tr>
+<tr><td valign="top"><a href="#unique-2">unique/2</a></td><td>
+  Discards repeated values in a sorted iterator according to a
+  provided equality function <code>Fun(A, B)</code> which should return <code>true</code>
+  when <code>A</code> and <code>B</code> are equal and <code>false</code> otherwise.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="cycle-1">cycle/1</a></h3>
+<div class="spec">
+<p><tt>cycle(Iterator1) -&gt; Iterator2</tt>
+<ul class="definitions"><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
+</div><p>
+  Create an infinite iterator that repeatedly returns the sequence of
+  elements in the given iterator.</p>
+
+<h3 class="function"><a name="group-2">group/2</a></h3>
+<div class="spec">
+<p><tt>group(Length, Iterator1) -&gt; Iterator2</tt>
+<ul class="definitions"><li><tt>Length = pos_integer()</tt></li><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+</div><p><p>
+  Create an iterator that returns groups of elements from <code>Iterator1</code>
+  as a list of at least <code>Length</code> elements.</p>
+ 
+  It is not an error if there are not enough elements to fill out the
+  final group, instead a smaller group is returned.</p>
+
+<h3 class="function"><a name="groupwith-2">groupwith/2</a></h3>
+<div class="spec">
+<p><tt>groupwith(Pred, Iterator1) -&gt; Iterator2</tt>
+<ul class="definitions"><li><tt>Pred = <a href="llists.html#type-predicate">llists:predicate</a>(Elem)</tt></li><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+</div><p><p>
+  Create an iterator that returns groups of elements from <code>Iterator1</code>
+  based on the return value of <code>Pred(Elem)</code>. If the predicate
+  function returns <code>true</code> it signals the end of a group which will be
+  returned as a list. If the predicate returns <code>false</code>, the element
+  will be included in the next group returned. Even if the predicate
+  function returns <code>false</code> for the last element, the final group will  
+still be returned.</p>
+ 
+  If <code>Pred(Elem)</code> returns false for every element in an infinite
+  iterator, the first evaluation of <code>Iterator2</code> will never return.</p>
+
+<h3 class="function"><a name="unique-1">unique/1</a></h3>
+<div class="spec">
+<p><tt>unique(Iterator1) -&gt; Iterator2</tt>
+<ul class="definitions"><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
+</div><p>
+  As <code>unique/2</code>, but with <code>==</code> as a equality function.</p>
+<p><b>See also:</b> <a href="#unique-2">unique/2</a>.</p>
+
+<h3 class="function"><a name="unique-2">unique/2</a></h3>
+<div class="spec">
+<p><tt>unique(Fun, Iterator1) -&gt; Iterator2</tt>
+<ul class="definitions"><li><tt>Fun = <a href="llists.html#type-compare">llists:compare</a>(A, B)</tt></li><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>A = Elem</tt></li><li><tt>B = Elem</tt></li></ul></p>
+</div><p><p>
+  Discards repeated values in a sorted iterator according to a
+  provided equality function <code>Fun(A, B)</code> which should return <code>true</code>
+  when <code>A</code> and <code>B</code> are equal and <code>false</code> otherwise. All values that  
+compares equal to the previously returned value are skipped until a  
+non-equal value is found.</p>
+ 
+  Infinite iterators of equal values will cause the first evaluation
+  of <code>Iterator2</code> to never return.</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>

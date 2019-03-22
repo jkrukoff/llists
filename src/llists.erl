@@ -7,7 +7,27 @@
 %%% when demanded.
 %%%
 %%% Several simple iterator constructors are provided as well as a
-%%% general purpose `unfold/2' constructor.
+%%% general purpose `unfold/2' constructor. Conversion to built in
+%%% types for lists and maps as the `from_list/1', `to_list/1',
+%%% `from_map/1' and `to_map/1' functions.
+%%%
+%%% Iterators are evaluated using the `next/1' function to evaluate
+%%% the next element of the iterator. The output of the next function
+%%% is a lazy list: either an improper list of the element and the
+%%% continuation or an empty list. Many additional iterator
+%%% transformation and evaluation functions are also present.
+%%%
+%%% In general, iterators are not expected to be pure functions.
+%%% Iterator transformations and evaluations should all evaluate each
+%%% element exactly once per output iterator (though not all elements
+%%% may be returned, depending on the function). This implies that
+%%% impure iterators should not be used with functions which return
+%%% multiple iterators if all iterators are to be evaluated.
+%%%
+%%% Many of the functions here are unsafe to use with infinite
+%%% iterators and will either fail to return on the initial call or on
+%%% the first attempt to evaluate an element of the iterator. Read the
+%%% documentation carefully when working with such iterators.
 %%%
 %%% The interface for this module attempts to follow the `lists'
 %%% behaviour as closely as possible. Guidelines for how past and
@@ -16,6 +36,8 @@
 %%% <ul>
 %%% <li>Any input lists are changed to expect iterators.</li>
 %%% <li>Any output lists are changed to be iterators.</li>
+%%% <li>Elements of input iterators should be evaluated exactly
+%%% once per output iterator.</li>
 %%% <li>Any numeric counts for repetition are changed to allow
 %%% 'infinity' as values and to be able to return infinite
 %%% iterators.</li>
@@ -26,14 +48,14 @@
 %%% </ul>
 %%%
 %%% As few functions outside of `lists' have been implemented as
-%%% possible, in order to have the best chance of keeping the
-%%% namespace clean for future additions to the `lists' module. New
+%%% possible in order to have the best chance of keeping the namespace
+%%% clean for future additions to the `lists' module. New
 %%% functionality is instead implemented in the `llists_utils' module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(llists).
 
--include("include/llists.hrl").
+-record(iterator, {next}).
 
 -type iterator() :: iterator(any()).
 -opaque iterator(Over) :: #iterator{next :: fun(() -> lazy_list(Over))}.
