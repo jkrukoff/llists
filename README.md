@@ -19,10 +19,10 @@ code.
 
 <table width="100%" border="0" summary="list of modules">
 <tr><td><a
-href="http://github.com/jkrukoff/llists/blob/proper-test-creation/doc/llists.md"
+href="http://github.com/jkrukoff/llists/blob/master/doc/llists.md"
 class="module">llists</a></td></tr>
 <tr><td><a
-href="http://github.com/jkrukoff/llists/blob/proper-test-creation/doc/llists_utils.md"
+href="http://github.com/jkrukoff/llists/blob/master/doc/llists_utils.md"
 class="module">llists_utils</a></td></tr></table>
 
 
