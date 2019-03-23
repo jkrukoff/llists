@@ -161,16 +161,16 @@ systems are appreciated.
 
 Streams and lazily evaluated lists are common language constructs and much
 prior art exists. Scheme's
-[SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.md) served as a useful
+[SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.html) served as a useful
 design document to base this work on.
 
 Other implementations that were used for reference:
 
-* Elixir's standard library [Stream](https://hexdocs.pm/elixir/Stream.md)
+* Elixir's standard library [Stream](https://hexdocs.pm/elixir/Stream.html)
   module.
 * The Erlang stream module from the [Datum
   library](https://github.com/fogfish/datum/blob/master/src/stream/stream.erl).
 * The [zlist](https://github.com/egobrain/zlist) Erlang library.
 * The [infinite
-  lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.md)
+  lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.html)
   example from the Erlang documentation.
