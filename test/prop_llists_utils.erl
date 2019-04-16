@@ -16,6 +16,22 @@
 %%% Tests
 %%%===================================================================
 
+prop_combinations() ->
+    ?FORALL({N, List},
+            ?LET(List, small_list(), {integer(0, length(List)), List}),
+            llists:to_list(
+              llists_utils:combinations(N, List)) ==
+            combinations(N, List)).
+
+prop_combinations_with_repetitions() ->
+    ?FORALL({N, List},
+            ?SUCHTHAT({N, List},
+                      ?LET(List, small_list(), {integer(0, length(List) + 1), List}),
+                      not (N == 1 andalso length(List) == 0)),
+            llists:to_list(
+              llists_utils:combinations(N, List, [repetitions])) ==
+            rep_combinations(N, List)).
+
 prop_cycle() ->
     ?FORALL({Length, List},
             ?LET(List,
@@ -28,8 +44,7 @@ prop_cycle() ->
                 Length)) ==
             lists:sublist(
               lists:append(lists:duplicate(?MAX_CYCLE, List)),
-              Length)
-           ).
+              Length)).
 
 prop_group() ->
     ?FORALL({Length, List},
@@ -69,6 +84,22 @@ prop_groupwith() ->
                 IsNotEmpty and IsSame
             end).
 
+prop_permutations() ->
+    ?FORALL({N, List},
+            ?LET(List, small_list(), {integer(0, length(List)), List}),
+            llists:to_list(
+              llists_utils:permutations(N, List)) ==
+            permutations(N, List)).
+
+prop_permutations_with_repetitions() ->
+    ?FORALL({N, List},
+            ?SUCHTHAT({N, List},
+                      ?LET(List, small_list(), {integer(0, length(List) + 1), List}),
+                      not (N == 1 andalso length(List) == 0)),
+            llists:to_list(
+              llists_utils:permutations(N, List, [repetitions])) ==
+            rep_permutations(N, List)).
+
 prop_unique_1() ->
     ?FORALL(List,
             duplicates(),
@@ -91,6 +122,18 @@ prop_unique_2() ->
 %%% Generators
 %%%===================================================================
 
+small_list() ->
+    small_list(any()).
+
+small_list(Of) ->
+    ?SIZED(Size,
+           if
+               Size > 6 -> 
+                   resize(6, list(Of));
+               Size =< 6 ->
+                   list(Of)
+           end).
+
 duplicates() ->
     frequency([{1, ?LET(List, list(), lists:sort(List ++ List))},
                {1, ?LET(List, list(), lists:sort(List))}]).
@@ -98,3 +141,44 @@ duplicates() ->
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
+
+enumerate(List) when is_list(List) ->
+    lists:zip(lists:seq(1, length(List)), List).
+
+remove(N, List) when N >= 0, is_list(List) ->
+    {Before, [_ | After]} = lists:split(N - 1, List),
+    Before ++ After.
+
+combinations(0, _) ->
+    [[]];
+combinations(_, []) ->
+    [];
+combinations(N, [Head | Tail]) ->
+    [[Head | Choices] ||
+     Choices <- combinations(N - 1, Tail)] ++ combinations(N, Tail).
+
+rep_combinations(0, _) ->
+    [[]];
+rep_combinations(_, []) ->
+    [];
+rep_combinations(N, [Head | Tail] = All) ->
+    [[Head | Choices] ||
+     Choices <- rep_combinations(N - 1, All)] ++ rep_combinations(N, Tail).
+
+permutations(0, _) ->
+    [[]];
+permutations(_, []) ->
+    [[]];
+permutations(N, All) ->
+    [[Head | Tail] ||
+     {Index, Head} <- enumerate(All),
+     Tail <- permutations(N - 1, remove(Index, All))].
+
+rep_permutations(0, _) ->
+    [[]];
+rep_permutations(_, []) ->
+    [[]];
+rep_permutations(N, All) ->
+    [[Head | Tail] ||
+     Head <- All,
+     Tail <- rep_permutations(N - 1, All)].

@@ -7,16 +7,64 @@
 %%%-------------------------------------------------------------------
 -module(llists_utils).
 
+-record(zipper, {heads, tail}).
+
+-type permutation_options() :: proplists:proplist().
+
 %% API
--export([cycle/1,
+-export([combinations/2,
+         combinations/3,
+         cycle/1,
          group/2,
          groupwith/2,
+         permutations/2,
+         permutations/3,
          unique/1,
          unique/2]).
+
+-export_type([permutation_options/0]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%% @see combinations/3
+-spec combinations(N, Choices) -> Iterator when
+      N :: non_neg_integer(),
+      Choices :: [Elem],
+      Iterator :: llists:iterator([Elem]).
+combinations(N, Choices) when N >= 0, is_list(Choices) ->
+    llists:unfold(fun (none) ->
+                          none;
+                      (CurrentChoices) ->
+                          NextChoice = next_choice(CurrentChoices),
+                          NextChoices = next_combination(CurrentChoices),
+                          {NextChoice, NextChoices}
+                  end,
+                  unique_choices(N, Choices)).
+
+%% @doc
+%% Create an iterator that returns all combinations of elements from
+%% `Choices' that are `N' elements long. If the `repetition' property
+%% is passed in `Options', combinations with repeated elements of
+%% `Choices' are included.
+%%
+%% If the elements of `Choices' are sorted, the resulting combinations
+%% will also be sorted.
+%% @end
+-spec combinations(N, Choices, Options) -> Iterator when
+      N :: non_neg_integer(),
+      Choices :: [Elem],
+      Options :: permutation_options(),
+      Iterator :: llists:iterator([Elem]).
+combinations(N, Choices, Options) when is_list(Options) ->
+    Repetitions = proplists:get_bool('repetitions', Options),
+    case Repetitions of
+        true ->
+            combinations_with_repetitions(N, Choices);
+        false ->
+            combinations(N, Choices)
+    end.
 
 %% @doc
 %% Create an infinite iterator that repeatedly returns the sequence of
@@ -70,6 +118,44 @@ groupwith(Pred, Iterator) when is_function(Pred, 1) ->
                   end,
                   Iterator).
 
+%% @see permutations/3
+-spec permutations(N, Choices) -> Iterator when
+      N :: non_neg_integer(),
+      Choices :: [Elem],
+      Iterator :: llists:iterator([Elem]).
+permutations(N, Choices) when N >= 0, is_list(Choices) ->
+    llists:unfold(fun (none) ->
+                          none;
+                      (Zippers) ->
+                          NextChoice = zipper_choice(Zippers),
+                          NextZippers = next_permutation(Zippers),
+                          {NextChoice, NextZippers}
+                  end,
+                  zipper_choices(N, Choices)).
+
+%% @doc
+%% Create an iterator that returns all permutations of elements from
+%% `Choices' that are `N' elements long. If the `repetition' property
+%% is passed in `Options', permutations with repeated elements of
+%% `Choices' are included.
+%%
+%% If the elements of `Choices' are sorted, the resulting permutations
+%% will also be sorted.
+%% @end
+-spec permutations(N, Choices, Options) -> Iterator when
+      N :: non_neg_integer(),
+      Choices :: [Elem],
+      Options :: permutation_options(),
+      Iterator :: llists:iterator([Elem]).
+permutations(N, Choices, Options) when is_list(Options) ->
+    Repetitions = proplists:get_bool('repetitions', Options),
+    case Repetitions of
+        true ->
+            permutations_with_repetitions(N, Choices);
+        false ->
+            permutations(N, Choices)
+    end.
+
 %% @doc
 %% As `unique/2', but with `==' as a equality function.
 %% @end
@@ -100,28 +186,128 @@ unique(Iterator) ->
 unique(Fun, Iterator) when is_function(Fun, 2) ->
     true = llists:is_iterator(Iterator),
     llists:unfold(fun Next({_Prev, []}) ->
-                   none;
-               Next({Prev, FoldIterator}) ->
-                   case {Prev, llists:next(FoldIterator)}  of
-                       {_Prev, []} ->
-                           none;
-                       {first, [Elem | NextIterator]} ->
-                           {Elem, {{previous, Elem}, NextIterator}};
-                       {{previous, PrevElem} = Prev,
-                        [Elem | NextIterator]} ->
-                           case Fun(Elem, PrevElem) of
-                               true ->
-                                   Next({Prev, NextIterator});
-                               false ->
-                                   {Elem, {{previous, Elem}, NextIterator}}
-                           end
-                   end
-           end,
-           {first, Iterator}).
+                          none;
+                      Next({Prev, FoldIterator}) ->
+                          case {Prev, llists:next(FoldIterator)}  of
+                              {_Prev, []} ->
+                                  none;
+                              {first, [Elem | NextIterator]} ->
+                                  {Elem, {{previous, Elem}, NextIterator}};
+                              {{previous, PrevElem} = Prev,
+                               [Elem | NextIterator]} ->
+                                  case Fun(Elem, PrevElem) of
+                                      true ->
+                                          Next({Prev, NextIterator});
+                                      false ->
+                                          {Elem, {{previous, Elem}, NextIterator}}
+                                  end
+                          end
+                  end,
+                  {first, Iterator}).
+
+%% TODO: Uniform random number stream.
+%% TODO: Random choice from list stream.
 
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
+
+repeated_choices(N, Choices) when N >= 0 ->
+    lists:duplicate(N, Choices).
+
+unique_choices(N, Choices) ->
+    unique_choices(N, Choices, []).
+
+unique_choices(0, _Choices, Acc) ->
+    Acc;
+unique_choices(_N, [], _Acc) ->
+    none;
+unique_choices(N, [_ | Tail] = Choices, Acc) when N > 0 ->
+    unique_choices(N - 1, Tail, [Choices | Acc]).
+
+next_choice(Choices) ->
+    lists:foldl(
+      fun ([Head | _], Acc) -> [Head | Acc] end,
+      [],
+      Choices).
+
+next_combination(Choices) ->
+    next_combination(1, Choices).
+
+next_combination(_N, []) ->
+    none;
+next_combination(N, [Current | Choices]) when N >= length(Current) ->
+    next_combination(N + 1, Choices);
+next_combination(N, [[_ | Tail] | Choices]) ->
+    unique_choices(N, Tail) ++ Choices.
+
+next_rep_combination(Choices) ->
+    next_rep_combination(1, Choices).
+
+next_rep_combination(_N, []) ->
+    none;
+next_rep_combination(N, [[_] | Choices]) ->
+    next_rep_combination(N + 1, Choices);
+next_rep_combination(N, [[_ | Tail] | Choices]) ->
+    repeated_choices(N, Tail) ++ Choices.
+
+combinations_with_repetitions(N, Choices) when N >= 0, is_list(Choices) ->
+    llists:unfold(fun (none) ->
+                          none;
+                      (CurrentChoices) ->
+                          NextChoice = next_choice(CurrentChoices),
+                          NextChoices = next_rep_combination(CurrentChoices),
+                          {NextChoice, NextChoices}
+                  end,
+                  repeated_choices(N, Choices)).
+
+zipper_choices(N, Choices) ->
+    zipper_choices(N, Choices, []).
+
+zipper_choices(0, _Choices, Acc) ->
+    Acc;
+zipper_choices(_N, [], _Acc) ->
+    none;
+zipper_choices(N, [Head | Tail], Acc) ->
+    zipper_choices(N - 1, Tail, [#zipper{heads=[Head], tail=Tail} | Acc]).
+
+zipper_choice(Zippers) ->
+    lists:foldl(
+      fun (#zipper{heads=[Head | _]}, Acc) -> [Head | Acc] end,
+      [],
+      Zippers).
+
+next_permutation(Zippers) ->
+    next_permutation(1, Zippers).
+
+next_permutation(_N, []) ->
+    none;
+next_permutation(N, [#zipper{tail=[]} | Zippers]) ->
+    next_permutation(N + 1, Zippers);
+next_permutation(N, [#zipper{heads=Heads, tail=[Head | Tail]} | Zippers]) ->
+    zipper_choices(N - 1, lists:reverse(Heads) ++ Tail) ++
+    [#zipper{heads=[Head | Heads], tail=Tail}] ++
+    Zippers.
+
+next_rep_permutation(Original, Choices) ->
+    next_rep_permutation(1, Original, Choices).
+
+next_rep_permutation(_N, _Original, []) ->
+    none;
+next_rep_permutation(N, Original, [[_] | Choices]) ->
+    next_rep_permutation(N + 1, Original, Choices);
+next_rep_permutation(N, Original, [[_ | Tail] | Choices]) ->
+    repeated_choices(N - 1, Original) ++ [Tail] ++ Choices.
+
+permutations_with_repetitions(N, Choices) when N >= 0, is_list(Choices) ->
+    llists:unfold(fun (none) ->
+                          none;
+                      (CurrentChoices) ->
+                          NextChoice = next_choice(CurrentChoices),
+                          NextChoices = next_rep_permutation(Choices, CurrentChoices),
+                          {NextChoice, NextChoices}
+                  end,
+                  repeated_choices(N, Choices)).
 
 group_loop(_N, _Acc, none) ->
     none;
