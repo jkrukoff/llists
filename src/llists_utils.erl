@@ -3,6 +3,12 @@
 %%% Additional iterator utilities that are not replicas of `lists'
 %%% module functionality. These functions are kept separate to avoid
 %%% any future name clashes with additions to the stdlib.
+%%%
+%%% Unlike the functions in `llists', these utility functions do not
+%%% follow the same strict transformation rules. Instead, inputs and
+%%% outputs generally follow evaluation needs with eagerly evaluated
+%%% values passed as lists and lazily evaluated ones passed as
+%%% iterators.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(llists_utils).
@@ -68,8 +74,18 @@ combinations(N, Choices) when N >= 0, is_list(Choices) ->
 %% is passed in `Options', combinations with repeated elements of
 %% `Choices' are included.
 %%
-%% If the elements of `Choices' are sorted, the resulting combinations
-%% will also be sorted.
+%% Examples:
+%% ```
+%% > llists:to_list(
+%%      llists_utils:combinations(2, [1, 2, 3]).
+%% [[1,2],[1,3],[2,3]]
+%% > llists:to_list(
+%%      llists_utils:combinations(2, [1, 2, 3], [repetitions]).
+%% [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]
+%% '''
+%%
+%% If the elements of `Choices' are sorted, the order of the resulting
+%% combinations will also be sorted.
 %% @end
 -spec combinations(N, Choices, Options) -> Iterator when
       N :: non_neg_integer(),
@@ -77,7 +93,7 @@ combinations(N, Choices) when N >= 0, is_list(Choices) ->
       Options :: permutation_options(),
       Iterator :: llists:iterator([Elem]).
 combinations(N, Choices, Options) when is_list(Options) ->
-    Repetitions = proplists:get_bool('repetitions', Options),
+    Repetitions = proplists:get_bool(repetitions, Options),
     case Repetitions of
         true ->
             combinations_with_repetitions(N, Choices);
@@ -99,7 +115,15 @@ cycle(Iterator) ->
 %% @doc
 %% Given an existing `Iterator1' creates a new `Iterator2' which
 %% returns each element of the original iterator as a tuple of the
-%% numer of elements returned and the element itself.
+%% number of elements returned and the element itself.
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%%      llists_utils:enumerate(
+%%          llits:from_list([one, two, three]))).
+%% [{1,one},{2,two},{3,three}]
+%% '''
 %% @end
 -spec enumerate(Iterator1) -> Iterator2 when
       Iterator1 :: llists:iterator(Elem),
@@ -120,6 +144,15 @@ enumerate(Iterator) ->
 %% @doc
 %% Create an iterator that returns groups of elements from `Iterator1'
 %% as a list of at least `Length' elements.
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%%      llists_utils:group(
+%%          2,
+%%          llists:from_list([1, 2, 3, 4, 5]))).
+%% [[1,2],[3,4],[5]]
+%% '''
 %%
 %% It is not an error if there are not enough elements to fill out the
 %% final group, instead a smaller group is returned.
@@ -143,6 +176,15 @@ group(Length, Iterator) when Length > 0 ->
 %% will be included in the next group returned. Even if the predicate
 %% function returns `false' for the last element, the final group will
 %% still be returned.
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%%      llists_utils:groupwith(
+%%          fun (Elem) -> Elem rem 2 == 0 end,
+%%          llists:from_list([1, 2, 3, 4, 5]))).
+%% [[1,2],[3,4],[5]]
+%% '''
 %%
 %% If `Pred(Elem)' returns false for every element in an infinite
 %% iterator, the first evaluation of `Iterator2' will never return.
@@ -179,8 +221,18 @@ permutations(N, Choices) when N >= 0, is_list(Choices) ->
 %% is passed in `Options', permutations with repeated elements of
 %% `Choices' are included.
 %%
-%% If the elements of `Choices' are sorted, the resulting permutations
-%% will also be sorted.
+%% Examples:
+%% ```
+%% > llists:to_list(
+%%      llists_utils:permutations(2, [1, 2, 3]).
+%% [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
+%% > llists:to_list(
+%%      llists_utils:permutations(2, [1, 2, 3], [repetitions]).
+%% [[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]]
+%% '''
+%%
+%% If the elements of `Choices' are sorted, the order of the resulting
+%% permutations will also be sorted.
 %% @end
 -spec permutations(N, Choices, Options) -> Iterator when
       N :: non_neg_integer(),
@@ -188,7 +240,7 @@ permutations(N, Choices) when N >= 0, is_list(Choices) ->
       Options :: permutation_options(),
       Iterator :: llists:iterator([Elem]).
 permutations(N, Choices, Options) when is_list(Options) ->
-    Repetitions = proplists:get_bool('repetitions', Options),
+    Repetitions = proplists:get_bool(repetitions, Options),
     case Repetitions of
         true ->
             permutations_with_repetitions(N, Choices);
@@ -238,6 +290,14 @@ unique(Iterator) ->
 %% when `A' and `B' are equal and `false' otherwise. All values that
 %% compares equal to the previously returned value are skipped until a
 %% non-equal value is found.
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%%      llists_utils:unique(
+%%          llists:from_list([1, 1, 2, 2, 1, 1]))).
+%% [1,2,1]
+%% '''
 %%
 %% Infinite iterators of equal values will cause the first evaluation
 %% of `Iterator2' to never return.
