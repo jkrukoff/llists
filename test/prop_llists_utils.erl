@@ -16,6 +16,18 @@
 %%% Tests
 %%%===================================================================
 
+prop_choice() ->
+    ?FORALL({N, List},
+            {pos_integer(), non_empty(list())},
+            begin
+                Choices = llists:to_list(
+                            llists:sublist(
+                              llists_utils:choice(List),
+                              N)),
+                lists:all(fun (Choice) -> lists:member(Choice, List) end,
+                          Choices)
+            end).
+
 prop_combinations() ->
     ?FORALL({N, List},
             ?LET(List, small_list(), {integer(0, length(List)), List}),
@@ -45,6 +57,13 @@ prop_cycle() ->
             lists:sublist(
               lists:append(lists:duplicate(?MAX_CYCLE, List)),
               Length)).
+
+prop_enumerate() ->
+    ?FORALL(List,
+            list(),
+            llists:to_list(
+              llists_utils:enumerate(
+                llists:from_list(List))) == enumerate(List)).
 
 prop_group() ->
     ?FORALL({Length, List},
@@ -99,6 +118,32 @@ prop_permutations_with_repetitions() ->
             llists:to_list(
               llists_utils:permutations(N, List, [repetitions])) ==
             rep_permutations(N, List)).
+
+prop_random_0() ->
+    ?FORALL(Length,
+            pos_integer(),
+            begin
+                Values = llists:to_list(
+                           llists:sublist(
+                             llists_utils:random(), Length)),
+                IsFloat = lists:all(fun is_float/1, Values),
+                InRange = lists:all(fun (X) -> X >= 0.0 andalso X < 1.0 end,
+                                    Values),
+                IsFloat and InRange
+            end).
+
+prop_random_1() ->
+    ?FORALL({N, Length},
+            {pos_integer(), pos_integer()},
+            begin
+                Values = llists:to_list(
+                           llists:sublist(
+                             llists_utils:random(N), Length)),
+                IsInteger = lists:all(fun is_integer/1, Values),
+                InRange = lists:all(fun (X) -> X >= 1 andalso X =< N end,
+                                    Values),
+                IsInteger and InRange
+            end).
 
 prop_unique_1() ->
     ?FORALL(List,

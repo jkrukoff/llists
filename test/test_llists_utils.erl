@@ -11,6 +11,13 @@
 %%% Tests
 %%%===================================================================
 
+choice_test() ->
+    ?assertEqual([1, 1, 1],
+                 llists:to_list(
+                   llists:sublist(
+                     llists_utils:choice([1]),
+                     3))).
+
 combinations_2_test() ->
     ?assertEqual([[1,2,3], [1,2,4], [1,2,5],
                   [1,3,4], [1,3,5], [1,4,5],
@@ -43,6 +50,12 @@ cycle_test() ->
                      llists_utils:cycle(
                        llists:from_list([1, 2, 3])),
                      5))).
+
+enumerate_test() ->
+    ?assertEqual([{1, one}, {2, two}],
+                 llists:to_list(
+                   llists_utils:enumerate(
+                     llists:from_list([one, two])))).
 
 group_test_() ->
     [?_assertEqual([],
@@ -126,6 +139,14 @@ permutations_3_test_() ->
                     [4,4,4]],
                    llists:to_list(
                      llists_utils:permutations(3, [1, 2, 3, 4], [repetitions])))].
+
+random_0_test() ->
+    [Value | _] = llists:next(llists_utils:random()),
+    ?assert(is_float(Value)).
+
+random_1_test() ->
+    [Value | _] = llists:next(llists_utils:random(10)),
+    ?assert(is_integer(Value)).
 
 unique_1_test() ->
     ?assertEqual([1, 2, 3, 2, 1],

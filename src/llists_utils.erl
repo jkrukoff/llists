@@ -12,13 +12,17 @@
 -type permutation_options() :: proplists:proplist().
 
 %% API
--export([combinations/2,
+-export([choice/1,
+         combinations/2,
          combinations/3,
          cycle/1,
+         enumerate/1,
          group/2,
          groupwith/2,
          permutations/2,
          permutations/3,
+         random/0,
+         random/1,
          unique/1,
          unique/2]).
 
@@ -27,6 +31,21 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%% @doc
+%% Create an infinite iterator that returns random elements from the
+%% given list of `Choices'. Each iterator returns a unique sequence
+%% and returns the same unique sequence each time it is evaluated.
+%% @end
+-spec choice(Choices) -> Iterator when
+      Choices :: [Elem, ...],
+      Iterator :: llists:iterator(Elem).
+choice(Choices) when length(Choices) > 0 ->
+    Length = length(Choices),
+    Enumerated = lists:zip(lists:seq(1, Length), Choices),
+    Lookup = maps:from_list(Enumerated),
+    llists:map(fun (I) -> maps:get(I, Lookup) end,
+               random(Length)).
 
 %% @see combinations/3
 -spec combinations(N, Choices) -> Iterator when
@@ -45,7 +64,7 @@ combinations(N, Choices) when N >= 0, is_list(Choices) ->
 
 %% @doc
 %% Create an iterator that returns all combinations of elements from
-%% `Choices' that are `N' elements long. If the `repetition' property
+%% `Choices' that are `N' elements long. If the `repetitions' property
 %% is passed in `Options', combinations with repeated elements of
 %% `Choices' are included.
 %%
@@ -76,6 +95,27 @@ combinations(N, Choices, Options) when is_list(Options) ->
 cycle(Iterator) ->
     true = llists:is_iterator(Iterator),
     llists:append(llists:duplicate(infinity, Iterator)).
+
+%% @doc
+%% Given an existing `Iterator1' creates a new `Iterator2' which
+%% returns each element of the original iterator as a tuple of the
+%% numer of elements returned and the element itself.
+%% @end
+-spec enumerate(Iterator1) -> Iterator2 when
+      Iterator1 :: llists:iterator(Elem),
+      Iterator2 :: llists:iterator({Index, Elem}),
+      Index :: pos_integer().
+enumerate(Iterator) ->
+    true = llists:is_iterator(Iterator),
+    llists:unfold(fun ({I, FoldIterator}) ->
+                          case llists:next(FoldIterator) of
+                              [] ->
+                                  none;
+                              [Elem | Next] ->
+                                  {{I, Elem}, {I + 1, Next}}
+                          end
+                  end,
+                  {1, Iterator}).
 
 %% @doc
 %% Create an iterator that returns groups of elements from `Iterator1'
@@ -135,7 +175,7 @@ permutations(N, Choices) when N >= 0, is_list(Choices) ->
 
 %% @doc
 %% Create an iterator that returns all permutations of elements from
-%% `Choices' that are `N' elements long. If the `repetition' property
+%% `Choices' that are `N' elements long. If the `repetitions' property
 %% is passed in `Options', permutations with repeated elements of
 %% `Choices' are included.
 %%
@@ -155,6 +195,31 @@ permutations(N, Choices, Options) when is_list(Options) ->
         false ->
             permutations(N, Choices)
     end.
+
+%% @doc
+%% Create an infinite iterator that returns random floats in the range
+%% `[0.0, 1.0)'. Each iterator returns a unique sequence and returns
+%% the same unique sequence each time it is evaluated.
+%% @end
+%% @see rand:uniform/0
+-spec random() -> Iterator when
+      Iterator :: llists:iterator(float()).
+random() ->
+    llists:unfold(fun (Seed) -> rand:uniform_s(Seed) end,
+                  rand:seed_s(exrop)).
+
+%% @doc
+%% Create an infinite iterator that returns random integers in the range
+%% `[1, N)'. Each iterator returns a unique sequence and returns
+%% the same unique sequence each time it is evaluated.
+%% @end
+%% @see rand:uniform/1
+-spec random(N) -> Iterator when
+      N :: pos_integer(),
+      Iterator :: llists:iterator(float()).
+random(N) when N >= 1 ->
+    llists:unfold(fun (Seed) -> rand:uniform_s(N, Seed) end,
+                  rand:seed_s(exrop)).
 
 %% @doc
 %% As `unique/2', but with `==' as a equality function.
@@ -204,9 +269,6 @@ unique(Fun, Iterator) when is_function(Fun, 2) ->
                           end
                   end,
                   {first, Iterator}).
-
-%% TODO: Uniform random number stream.
-%% TODO: Random choice from list stream.
 
 %%%===================================================================
 %%% Internal Functions
