@@ -18,12 +18,8 @@ code.
 ## Modules ##
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a
-href="http://github.com/jkrukoff/llists/blob/master/doc/llists.md"
-class="module">llists</a></td></tr>
-<tr><td><a
-href="http://github.com/jkrukoff/llists/blob/master/doc/llists_utils.md"
-class="module">llists_utils</a></td></tr></table>
+<tr><td><a href="http://github.com/jkrukoff/llists/blob/permutations/doc/llists.md" class="module">llists</a></td></tr>
+<tr><td><a href="http://github.com/jkrukoff/llists/blob/permutations/doc/llists_utils.md" class="module">llists_utils</a></td></tr></table>
 
 
 ### Getting Started ###
@@ -42,7 +38,7 @@ dependency to your rebar.config as follows:
 
 To use this library, it is first necessary to create an iterator. This can
 either be done from an existing data structure using functions like
-`llists:from_list/1` or by expressing the continuation programatically using
+`llists:from_list/1` or by expressing the continuation programmatically using
 functions like `llists:unfold/2`.
 
 Once an iterator is constructed, it can then be evaluated an element at a time
@@ -61,18 +57,17 @@ continuation. When evaluated by `llists:next/1` an iterator returns a lazy
 list, represented by one of two options:
 
 * `[]`: An empty list, signaling that no more elements are available.
-
 * `[Elem | Iterator]`: An improper list consisting of an element and an
-iterator to continue evaluation.
+  iterator to continue evaluation.
 
 
 #### Examples ####
 
 As an example task, let us calculate the mean difference between a list of
 integer pairs. These pairs are stored in a
-[file](http://github.com/jkrukoff/llists/blob/proper-test-creation/doc/example.txt)
-as comma separated values, one per line. We can use the `llists` module to
-both read lines from the file and calculate the average lazily, thus avoiding
+[file](http://github.com/jkrukoff/llists/blob/permutations/doc/example.txt) as
+comma separated values, one per line. We can use the `llists` module to both
+read lines from the file and calculate the average lazily, thus avoiding
 loading the entire file into memory during computation.
 
 First, we need to construct the iterator:
@@ -160,17 +155,15 @@ systems are appreciated.
 ### Lineage ###
 
 Streams and lazily evaluated lists are common language constructs and much
-prior art exists. Scheme's
-[SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.html) served as a useful
-design document to base this work on.
+prior art exists. Scheme's [SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.html) served as a
+useful design document to base this work on.
 
 Other implementations that were used for reference:
 
-* Elixir's standard library [Stream](https://hexdocs.pm/elixir/Stream.html)
-  module.
+* Elixir's standard library [Stream](https://hexdocs.pm/elixir/Stream.html) module.
 * The Erlang stream module from the [Datum
   library](https://github.com/fogfish/datum/blob/master/src/stream/stream.erl).
-* The [zlist](https://github.com/egobrain/zlist) Erlang library.
-* The [infinite
-  lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.html)
+* The [zlist](https://github.com/egobrain/zlist) Erlang
+  library.
+* The [infinite lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.html)
   example from the Erlang documentation.

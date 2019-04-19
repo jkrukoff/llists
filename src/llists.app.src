@@ -1,7 +1,7 @@
 {application, llists,
  [{pkg_name, "llists"},
   {description, "A library for lazily evaluated lists."},
-  {vsn, "1.0.0"},
+  {vsn, "1.1.0"},
   {applications, [kernel,
                   stdlib]},
   {modules, [llists]},
