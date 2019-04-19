@@ -18,8 +18,8 @@ code.
 ## Modules ##
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a href="http://github.com/jkrukoff/llists/blob/permutations/doc/llists.md" class="module">llists</a></td></tr>
-<tr><td><a href="http://github.com/jkrukoff/llists/blob/permutations/doc/llists_utils.md" class="module">llists_utils</a></td></tr></table>
+<tr><td><a href="http://github.com/jkrukoff/llists/blob/master/doc/llists.md" class="module">llists</a></td></tr>
+<tr><td><a href="http://github.com/jkrukoff/llists/blob/master/doc/llists_utils.md" class="module">llists_utils</a></td></tr></table>
 
 
 ### Getting Started ###
@@ -65,10 +65,10 @@ list, represented by one of two options:
 
 As an example task, let us calculate the mean difference between a list of
 integer pairs. These pairs are stored in a
-[file](http://github.com/jkrukoff/llists/blob/permutations/doc/example.txt) as
-comma separated values, one per line. We can use the `llists` module to both
-read lines from the file and calculate the average lazily, thus avoiding
-loading the entire file into memory during computation.
+[file](http://github.com/jkrukoff/llists/blob/master/doc/example.txt) as comma
+separated values, one per line. We can use the `llists` module to both read
+lines from the file and calculate the average lazily, thus avoiding loading
+the entire file into memory during computation.
 
 First, we need to construct the iterator:
 
@@ -155,8 +155,9 @@ systems are appreciated.
 ### Lineage ###
 
 Streams and lazily evaluated lists are common language constructs and much
-prior art exists. Scheme's [SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.html) served as a
-useful design document to base this work on.
+prior art exists. Scheme's
+[SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.html) served as a useful
+design document to base this work on.
 
 Other implementations that were used for reference:
 

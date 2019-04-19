@@ -4,7 +4,7 @@
 
 Copyright (c) 2019 John Krukoff
 
-__Version:__ 1.0.0
+__Version:__ 1.1.0
 
 __Authors:__ John Krukoff ([`github@cultist.org`](mailto:github@cultist.org)).
 
@@ -38,7 +38,7 @@ as a dependency to your rebar.config as follows:
 
 To use this library, it is first necessary to create an iterator. This can
 either be done from an existing data structure using functions like
-`llists:from_list/1` or by expressing the continuation programatically using
+`llists:from_list/1` or by expressing the continuation programmatically using
 functions like `llists:unfold/2`.
 
 Once an iterator is constructed, it can then be evaluated an element at a time
