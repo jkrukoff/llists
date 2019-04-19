@@ -10,25 +10,58 @@
 <hr>
 
 <h1>Module llists_utils</h1>
-<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
-   Additional iterator utilities that are not replicas of <code>lists</code>
-   module functionality.
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#types">Data Types</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>
+   Additional iterator utilities that are not replicas of <code>lists</code>   
+module functionality.
 
 
-<h2><a name="description">Description</a></h2>
-   Additional iterator utilities that are not replicas of <code>lists</code>
-   module functionality. These functions are kept separate to avoid
-   any future name clashes with additions to the stdlib.
+<h2><a name="description">Description</a></h2><p>
+   Additional iterator utilities that are not replicas of <code>lists</code>   
+module functionality. These functions are kept separate to avoid   
+any future name clashes with additions to the stdlib.</p>
+  
+   Unlike the functions in <code>llists</code>, these utility functions do not
+   follow the same strict transformation rules. Instead, inputs and
+   outputs generally follow evaluation needs with eagerly evaluated
+   values passed as lists and lazily evaluated ones passed as
+   iterators.
+<h2><a name="types">Data Types</a></h2>
+
+<h3 class="typedecl"><a name="type-permutation_options">permutation_options()</a></h3>
+<p><tt>permutation_options() = <a href="proplists.html#type-proplist">proplists:proplist()</a></tt></p>
+
+
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#cycle-1">cycle/1</a></td><td>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#choice-1">choice/1</a></td><td>
+  Create an infinite iterator that returns random elements from the
+  given list of <code>Choices</code>.</td></tr>
+<tr><td valign="top"><a href="#combinations-2">combinations/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#combinations-3">combinations/3</a></td><td>
+  Create an iterator that returns all combinations of elements from
+  <code>Choices</code> that are <code>N</code> elements long.</td></tr>
+<tr><td valign="top"><a href="#cycle-1">cycle/1</a></td><td>
   Create an infinite iterator that repeatedly returns the sequence of
   elements in the given iterator.</td></tr>
+<tr><td valign="top"><a href="#enumerate-1">enumerate/1</a></td><td>
+  Given an existing <code>Iterator1</code> creates a new <code>Iterator2</code> which  
+returns each element of the original iterator as a tuple of the  
+number of elements returned and the element itself.</td></tr>
 <tr><td valign="top"><a href="#group-2">group/2</a></td><td>
   Create an iterator that returns groups of elements from <code>Iterator1</code>
   as a list of at least <code>Length</code> elements.</td></tr>
 <tr><td valign="top"><a href="#groupwith-2">groupwith/2</a></td><td>
   Create an iterator that returns groups of elements from <code>Iterator1</code>
   based on the return value of <code>Pred(Elem)</code>.</td></tr>
+<tr><td valign="top"><a href="#permutations-2">permutations/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#permutations-3">permutations/3</a></td><td>
+  Create an iterator that returns all permutations of elements from
+  <code>Choices</code> that are <code>N</code> elements long.</td></tr>
+<tr><td valign="top"><a href="#random-0">random/0</a></td><td>
+  Create an infinite iterator that returns random floats in the range
+  <code>[0.0, 1.0)</code>.</td></tr>
+<tr><td valign="top"><a href="#random-1">random/1</a></td><td>
+  Create an infinite iterator that returns random integers in the range
+  <code>[1, N)</code>.</td></tr>
 <tr><td valign="top"><a href="#unique-1">unique/1</a></td><td>
   As <code>unique/2</code>, but with <code>==</code> as a equality function.</td></tr>
 <tr><td valign="top"><a href="#unique-2">unique/2</a></td><td>
@@ -39,6 +72,43 @@
 
 <h2><a name="functions">Function Details</a></h2>
 
+<h3 class="function"><a name="choice-1">choice/1</a></h3>
+<div class="spec">
+<p><tt>choice(Choices) -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>Choices = [Elem, ...]</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
+</div><p>
+  Create an infinite iterator that returns random elements from the
+  given list of <code>Choices</code>. Each iterator returns a unique sequence
+  and returns the same unique sequence each time it is evaluated.</p>
+
+<h3 class="function"><a name="combinations-2">combinations/2</a></h3>
+<div class="spec">
+<p><tt>combinations(N, Choices) -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+</div>
+<p><b>See also:</b> <a href="#combinations-3">combinations/3</a>.</p>
+
+<h3 class="function"><a name="combinations-3">combinations/3</a></h3>
+<div class="spec">
+<p><tt>combinations(N, Choices, Options) -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Options = <a href="#type-permutation_options">permutation_options()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+</div><p><p>
+  Create an iterator that returns all combinations of elements from
+  <code>Choices</code> that are <code>N</code> elements long. If the <code>repetitions</code> property
+  is passed in <code>Options</code>, combinations with repeated elements of
+  <code>Choices</code> are included.</p>
+ 
+  Examples:
+  <pre>  &gt; llists:to_list(
+       llists_utils:combinations(2, [1, 2, 3]).
+  [[1,2],[1,3],[2,3]]
+  &gt; llists:to_list(
+       llists_utils:combinations(2, [1, 2, 3], [repetitions]).
+  [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]</pre>
+ 
+  If the elements of <code>Choices</code> are sorted, the order of the resulting
+  combinations will also be sorted.</p>
+
 <h3 class="function"><a name="cycle-1">cycle/1</a></h3>
 <div class="spec">
 <p><tt>cycle(Iterator1) -&gt; Iterator2</tt>
@@ -47,6 +117,21 @@
   Create an infinite iterator that repeatedly returns the sequence of
   elements in the given iterator.</p>
 
+<h3 class="function"><a name="enumerate-1">enumerate/1</a></h3>
+<div class="spec">
+<p><tt>enumerate(Iterator1) -&gt; Iterator2</tt>
+<ul class="definitions"><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>({Index, Elem})</tt></li><li><tt>Index = pos_integer()</tt></li></ul></p>
+</div><p><p>
+  Given an existing <code>Iterator1</code> creates a new <code>Iterator2</code> which  
+returns each element of the original iterator as a tuple of the  
+number of elements returned and the element itself.</p>
+ 
+  Example:
+  <pre>  &gt; llists:to_list(
+       llists_utils:enumerate(
+           llits:from_list([one, two, three]))).
+  [{1,one},{2,two},{3,three}]</pre></p>
+
 <h3 class="function"><a name="group-2">group/2</a></h3>
 <div class="spec">
 <p><tt>group(Length, Iterator1) -&gt; Iterator2</tt>
@@ -54,6 +139,13 @@
 </div><p><p>
   Create an iterator that returns groups of elements from <code>Iterator1</code>
   as a list of at least <code>Length</code> elements.</p>
+ 
+  Example:
+  <pre>  &gt; llists:to_list(
+       llists_utils:group(
+           2,
+           llists:from_list([1, 2, 3, 4, 5]))).
+  [[1,2],[3,4],[5]]</pre>
  
   It is not an error if there are not enough elements to fill out the
   final group, instead a smaller group is returned.</p>
@@ -71,8 +163,63 @@
   function returns <code>false</code> for the last element, the final group will  
 still be returned.</p>
  
+  Example:
+  <pre>  &gt; llists:to_list(
+       llists_utils:groupwith(
+           fun (Elem) -&gt; Elem rem 2 == 0 end,
+           llists:from_list([1, 2, 3, 4, 5]))).
+  [[1,2],[3,4],[5]]</pre>
+ 
   If <code>Pred(Elem)</code> returns false for every element in an infinite
   iterator, the first evaluation of <code>Iterator2</code> will never return.</p>
+
+<h3 class="function"><a name="permutations-2">permutations/2</a></h3>
+<div class="spec">
+<p><tt>permutations(N, Choices) -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+</div>
+<p><b>See also:</b> <a href="#permutations-3">permutations/3</a>.</p>
+
+<h3 class="function"><a name="permutations-3">permutations/3</a></h3>
+<div class="spec">
+<p><tt>permutations(N, Choices, Options) -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Options = <a href="#type-permutation_options">permutation_options()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+</div><p><p>
+  Create an iterator that returns all permutations of elements from
+  <code>Choices</code> that are <code>N</code> elements long. If the <code>repetitions</code> property
+  is passed in <code>Options</code>, permutations with repeated elements of
+  <code>Choices</code> are included.</p>
+ 
+  Examples:
+  <pre>  &gt; llists:to_list(
+       llists_utils:permutations(2, [1, 2, 3]).
+  [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
+  &gt; llists:to_list(
+       llists_utils:permutations(2, [1, 2, 3], [repetitions]).
+  [[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]]</pre>
+ 
+  If the elements of <code>Choices</code> are sorted, the order of the resulting
+  permutations will also be sorted.</p>
+
+<h3 class="function"><a name="random-0">random/0</a></h3>
+<div class="spec">
+<p><tt>random() -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(float())</tt></li></ul></p>
+</div><p>
+  Create an infinite iterator that returns random floats in the range
+  <code>[0.0, 1.0)</code>. Each iterator returns a unique sequence and returns
+  the same unique sequence each time it is evaluated.</p>
+<p><b>See also:</b> <a href="rand.html#uniform-0">rand:uniform/0</a>.</p>
+
+<h3 class="function"><a name="random-1">random/1</a></h3>
+<div class="spec">
+<p><tt>random(N) -&gt; Iterator</tt>
+<ul class="definitions"><li><tt>N = pos_integer()</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(float())</tt></li></ul></p>
+</div><p>
+  Create an infinite iterator that returns random integers in the range
+  <code>[1, N)</code>. Each iterator returns a unique sequence and returns
+  the same unique sequence each time it is evaluated.</p>
+<p><b>See also:</b> <a href="rand.html#uniform-1">rand:uniform/1</a>.</p>
 
 <h3 class="function"><a name="unique-1">unique/1</a></h3>
 <div class="spec">
@@ -92,6 +239,12 @@ still be returned.</p>
   when <code>A</code> and <code>B</code> are equal and <code>false</code> otherwise. All values that  
 compares equal to the previously returned value are skipped until a  
 non-equal value is found.</p>
+ 
+  Example:
+  <pre>  &gt; llists:to_list(
+       llists_utils:unique(
+           llists:from_list([1, 1, 2, 2, 1, 1]))).
+  [1,2,1]</pre>
  
   Infinite iterators of equal values will cause the first evaluation
   of <code>Iterator2</code> to never return.</p>
