@@ -12,6 +12,7 @@ tags
 
 # Build tools in base image.
 ./rebar3
+./node_modules
 
 # Local build artifacts.
 ./_build

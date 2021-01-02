@@ -1,16 +1,15 @@
+# Module llists
 
-
-# Module llists #
-* [Description](#description)
-* [Data Types](#types)
-* [Function Index](#index)
-* [Function Details](#functions)
+- [Description](#description)
+- [Data Types](#types)
+- [Function Index](#index)
+- [Function Details](#functions)
 
 A lazily evaluated lists module.
 
 <a name="description"></a>
 
-## Description ##
+## Description
 
 This module provides an iterator
 type which is an opaque record wrapped around a list continuation.
@@ -45,23 +44,22 @@ The interface for this module attempts to follow the `lists`
 behaviour as closely as possible. Guidelines for how past and
 future translation is performed is as follows:
 
-* Any input lists are changed to expect iterators.
+- Any input lists are changed to expect iterators.
 
-* Any output lists are changed to be iterators.
+- Any output lists are changed to be iterators.
 
-* Elements of input iterators should be evaluated exactly
-once per output iterator.
+- Elements of input iterators should be evaluated exactly
+  once per output iterator.
 
-* Any numeric counts for repetition are changed to allow
-'infinity' as values and to be able to return infinite
-iterators.
+- Any numeric counts for repetition are changed to allow
+  'infinity' as values and to be able to return infinite
+  iterators.
 
-* On error, the same exception should be raised, though it may
-not be raised until the triggering element of an iterator is
-evaluated.
+- On error, the same exception should be raised, though it may
+  not be raised until the triggering element of an iterator is
+  evaluated.
 
-* Iteration evaluation behaviour is documented.
-
+- Iteration evaluation behaviour is documented.
 
 As few functions outside of `lists` have been implemented as
 possible in order to have the best chance of keeping the namespace
@@ -69,141 +67,85 @@ clean for future additions to the `lists` module. New
 functionality is instead implemented in the `llists_utils` module.
 <a name="types"></a>
 
-## Data Types ##
+## Data Types
 
-
-
-
-### <a name="type-accumulator">accumulator()</a> ###
-
+### <a name="type-accumulator">accumulator()</a>
 
 <pre><code>
 accumulator() = any()
 </code></pre>
 
-
-
-
-### <a name="type-combine">combine()</a> ###
-
+### <a name="type-combine">combine()</a>
 
 <pre><code>
 combine(A, B, Out) = fun((A, B) -&gt; Out)
 </code></pre>
 
-
-
-
-### <a name="type-combine3">combine3()</a> ###
-
+### <a name="type-combine3">combine3()</a>
 
 <pre><code>
 combine3(A, B, C, Out) = fun((A, B, C) -&gt; Out)
 </code></pre>
 
-
-
-
-### <a name="type-compare">compare()</a> ###
-
+### <a name="type-compare">compare()</a>
 
 <pre><code>
 compare(A, B) = fun((A, B) -&gt; boolean())
 </code></pre>
 
-
-
-
-### <a name="type-filtermap">filtermap()</a> ###
-
+### <a name="type-filtermap">filtermap()</a>
 
 <pre><code>
 filtermap(A, B) = fun((A) -&gt; boolean() | {true, B})
 </code></pre>
 
-
-
-
-### <a name="type-fold">fold()</a> ###
-
+### <a name="type-fold">fold()</a>
 
 <pre><code>
 fold(Elem, AccIn, AccOut) = fun((Elem, AccIn) -&gt; AccOut)
 </code></pre>
 
+### <a name="type-iterator">iterator()</a>
 
+**abstract datatype**: `iterator(Over)`
 
-
-### <a name="type-iterator">iterator()</a> ###
-
-
-__abstract datatype__: `iterator(Over)`
-
-
-
-
-### <a name="type-iterator">iterator()</a> ###
-
+### <a name="type-iterator">iterator()</a>
 
 <pre><code>
 iterator() = <a href="#type-iterator">iterator</a>(any())
 </code></pre>
 
-
-
-
-### <a name="type-lazy_list">lazy_list()</a> ###
-
+### <a name="type-lazy_list">lazy_list()</a>
 
 <pre><code>
 lazy_list(Over) = nonempty_improper_list(Over, <a href="#type-iterator">iterator</a>(Over)) | []
 </code></pre>
 
-
-
-
-### <a name="type-map">map()</a> ###
-
+### <a name="type-map">map()</a>
 
 <pre><code>
 map(A, B) = fun((A) -&gt; B)
 </code></pre>
 
-
-
-
-### <a name="type-mapfold">mapfold()</a> ###
-
+### <a name="type-mapfold">mapfold()</a>
 
 <pre><code>
 mapfold(A, AccIn, B, AccOut) = fun((A, AccIn) -&gt; {B, AccOut})
 </code></pre>
 
-
-
-
-### <a name="type-predicate">predicate()</a> ###
-
+### <a name="type-predicate">predicate()</a>
 
 <pre><code>
 predicate(Elem) = fun((Elem) -&gt; boolean())
 </code></pre>
 
-
-
-
-### <a name="type-tuple_iterator">tuple_iterator()</a> ###
-
+### <a name="type-tuple_iterator">tuple_iterator()</a>
 
 <pre><code>
 tuple_iterator() = <a href="#type-iterator">iterator</a>(tuple())
 </code></pre>
 
-
-
-
-### <a name="type-unfold">unfold()</a> ###
-
+### <a name="type-unfold">unfold()</a>
 
 <pre><code>
 unfold(Elem, AccIn, AccOut) = fun((AccIn) -&gt; {Elem, AccOut} | none)
@@ -211,8 +153,7 @@ unfold(Elem, AccIn, AccOut) = fun((AccIn) -&gt; {Elem, AccOut} | none)
 
 <a name="index"></a>
 
-## Function Index ##
-
+## Function Index
 
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#all-2">all/2</a></td><td>
 Returns <code>true</code> if <code>Pred(Elem)</code> returns <code>true</code> for all elements
@@ -381,14 +322,13 @@ Combines the elements of two iterators of equal length into one iterator.</td></
 Combines the elements of three iterators of equal length into one
 iterator.</td></tr></table>
 
-
 <a name="functions"></a>
 
-## Function Details ##
+## Function Details
 
 <a name="all-2"></a>
 
-### all/2 ###
+### all/2
 
 <pre><code>
 all(Pred, Iterator) -&gt; boolean()
@@ -404,7 +344,7 @@ when `Iterator` is empty.
 
 <a name="any-2"></a>
 
-### any/2 ###
+### any/2
 
 <pre><code>
 any(Pred, Iterator) -&gt; boolean()
@@ -420,7 +360,7 @@ when `Iterator` is empty.
 
 <a name="append-1"></a>
 
-### append/1 ###
+### append/1
 
 <pre><code>
 append(IteratorOfIterators) -&gt; Iterator
@@ -433,7 +373,7 @@ Returns an iterator in which all the subiterators of
 
 <a name="append-2"></a>
 
-### append/2 ###
+### append/2
 
 <pre><code>
 append(Iterator1, Iterator2) -&gt; Iterator3
@@ -446,7 +386,7 @@ of `Iterator1` followed by the elements of `Iterator2`.
 
 <a name="concat-1"></a>
 
-### concat/1 ###
+### concat/1
 
 <pre><code>
 concat(Iterator) -&gt; string()
@@ -461,7 +401,7 @@ will never return.
 
 <a name="delete-2"></a>
 
-### delete/2 ###
+### delete/2
 
 <pre><code>
 delete(Elem1, Iterator1) -&gt; Iterator2
@@ -474,7 +414,7 @@ Returns a copy of `Iterator1` where the first element matching
 
 <a name="droplast-1"></a>
 
-### droplast/1 ###
+### droplast/1
 
 <pre><code>
 droplast(Iterator1) -&gt; Iterator2
@@ -490,7 +430,7 @@ value.
 
 <a name="dropwhile-2"></a>
 
-### dropwhile/2 ###
+### dropwhile/2
 
 <pre><code>
 dropwhile(Pred, Iterator1) -&gt; Iterator2
@@ -503,7 +443,7 @@ true and returns the remaining iterator.
 
 <a name="duplicate-2"></a>
 
-### duplicate/2 ###
+### duplicate/2
 
 <pre><code>
 duplicate(N, Elem) -&gt; Iterator
@@ -516,7 +456,7 @@ Returns an iterator containing `N` copies of term `Elem`. If `N` is
 
 <a name="filter-2"></a>
 
-### filter/2 ###
+### filter/2
 
 <pre><code>
 filter(Pred, Iterator1) -&gt; Iterator2
@@ -529,7 +469,7 @@ which `Pred(Elem)` returns `true`.
 
 <a name="filtermap-2"></a>
 
-### filtermap/2 ###
+### filtermap/2
 
 <pre><code>
 filtermap(Fun, Iterator1) -&gt; Iterator2
@@ -570,7 +510,7 @@ Example:
 
 <a name="flatlength-1"></a>
 
-### flatlength/1 ###
+### flatlength/1
 
 <pre><code>
 flatlength(DeepIterator) -&gt; Length
@@ -582,7 +522,7 @@ Equivalent to `length(flatten(DeepIterator))`.
 
 <a name="flatmap-2"></a>
 
-### flatmap/2 ###
+### flatmap/2
 
 <pre><code>
 flatmap(Fun, Iterator1) -&gt; Iterator2
@@ -614,7 +554,7 @@ Example:
 
 <a name="flatten-1"></a>
 
-### flatten/1 ###
+### flatten/1
 
 <pre><code>
 flatten(DeepIterator) -&gt; Iterator
@@ -626,7 +566,7 @@ Returns a flattened version of `DeepIterator`.
 
 <a name="flatten-2"></a>
 
-### flatten/2 ###
+### flatten/2
 
 <pre><code>
 flatten(DeepIterator, TailIterator) -&gt; Iterator
@@ -639,7 +579,7 @@ appended.
 
 <a name="foldl-3"></a>
 
-### foldl/3 ###
+### foldl/3
 
 <pre><code>
 foldl(Fun, Acc0, Iterator) -&gt; AccOut
@@ -658,7 +598,7 @@ return.
 
 <a name="foldr-3"></a>
 
-### foldr/3 ###
+### foldr/3
 
 <pre><code>
 foldr(Fun, Acc0, Iterator) -&gt; AccOut
@@ -683,11 +623,11 @@ The iterator is fully evaluated before the fold begins, infinite
 iterators will never return. `foldl/3` does not fully evaluate the
 iterator and is usually preferred to `foldr/3`.
 
-__See also:__ [foldl/3](#foldl-3).
+**See also:** [foldl/3](#foldl-3).
 
 <a name="foreach-2"></a>
 
-### foreach/2 ###
+### foreach/2
 
 <pre><code>
 foreach(Fun, Iterator) -&gt; ok
@@ -705,7 +645,7 @@ return.
 
 <a name="from_list-1"></a>
 
-### from_list/1 ###
+### from_list/1
 
 <pre><code>
 from_list(List) -&gt; Iterator
@@ -718,7 +658,7 @@ list will be returned in order by the returned iterator.
 
 <a name="from_map-1"></a>
 
-### from_map/1 ###
+### from_map/1
 
 <pre><code>
 from_map(Map) -&gt; Iterator
@@ -732,7 +672,7 @@ returned iterator.
 
 <a name="hd-1"></a>
 
-### hd/1 ###
+### hd/1
 
 <pre><code>
 hd(Iterator) -&gt; Elem
@@ -752,7 +692,7 @@ Failure: `badarg` if `Iterator` is empty.
 
 <a name="is_iterator-1"></a>
 
-### is_iterator/1 ###
+### is_iterator/1
 
 <pre><code>
 is_iterator(Candidate) -&gt; boolean()
@@ -765,7 +705,7 @@ and `false` otherwise.
 
 <a name="join-2"></a>
 
-### join/2 ###
+### join/2
 
 <pre><code>
 join(Sep, Iterator1) -&gt; Iterator2
@@ -790,7 +730,7 @@ value.
 
 <a name="keydelete-3"></a>
 
-### keydelete/3 ###
+### keydelete/3
 
 <pre><code>
 keydelete(Key, N, TupleIterator1) -&gt; TupleIterator2
@@ -804,7 +744,7 @@ such a tuple.
 
 <a name="keyfind-3"></a>
 
-### keyfind/3 ###
+### keyfind/3
 
 <pre><code>
 keyfind(Key, N, TupleIterator) -&gt; Tuple | false
@@ -821,7 +761,7 @@ is found, infinite iterators will never return.
 
 <a name="keymap-3"></a>
 
-### keymap/3 ###
+### keymap/3
 
 <pre><code>
 keymap(Fun, N, TupleIterator1) -&gt; TupleIterator2
@@ -848,7 +788,7 @@ Examples:
 
 <a name="keymember-3"></a>
 
-### keymember/3 ###
+### keymember/3
 
 <pre><code>
 keymember(Key, N, TupleIterator) -&gt; boolean()
@@ -864,7 +804,7 @@ is found, infinite iterators will never return.
 
 <a name="keymerge-3"></a>
 
-### keymerge/3 ###
+### keymerge/3
 
 <pre><code>
 keymerge(N, TupleIterator1, TupleIterator2) -&gt; TupleIterator3
@@ -883,7 +823,7 @@ The first element of each iterator will be evaluated.
 
 <a name="keyreplace-4"></a>
 
-### keyreplace/4 ###
+### keyreplace/4
 
 <pre><code>
 keyreplace(Key, N, TupleIterator1, NewTuple) -&gt; TupleIterator2
@@ -897,7 +837,7 @@ tuple whose `N`th element compares equal to `Key` is replaced with
 
 <a name="keysearch-3"></a>
 
-### keysearch/3 ###
+### keysearch/3
 
 <pre><code>
 keysearch(Key, N, TupleIterator) -&gt; {value, Tuple} | false
@@ -911,11 +851,11 @@ such a tuple is found, otherwise `false`.
 
 Function keyfind/3 is usually more convenient.
 
-__See also:__ [keyfind/3](#keyfind-3).
+**See also:** [keyfind/3](#keyfind-3).
 
 <a name="keysort-2"></a>
 
-### keysort/2 ###
+### keysort/2
 
 <pre><code>
 keysort(N, TupleIterator1) -&gt; TupleIterator2
@@ -932,7 +872,7 @@ return.
 
 <a name="keystore-4"></a>
 
-### keystore/4 ###
+### keystore/4
 
 <pre><code>
 keystore(Key, N, TupleIterator1, NewTuple) -&gt; TupleIterator2
@@ -948,7 +888,7 @@ appended to the end is returned.
 
 <a name="keytake-3"></a>
 
-### keytake/3 ###
+### keytake/3
 
 <pre><code>
 keytake(Key, N, TupleIterator1) -&gt; {value, Tuple, TupleIterator2}
@@ -968,7 +908,7 @@ is found, infinite iterators will never return.
 
 <a name="last-1"></a>
 
-### last/1 ###
+### last/1
 
 <pre><code>
 last(Iterator) -&gt; Elem
@@ -983,7 +923,7 @@ return.
 
 <a name="length-1"></a>
 
-### length/1 ###
+### length/1
 
 <pre><code>
 length(Iterator) -&gt; Length
@@ -1003,7 +943,7 @@ return.
 
 <a name="map-2"></a>
 
-### map/2 ###
+### map/2
 
 <pre><code>
 map(Fun, Iterator1) -&gt; Iterator2
@@ -1017,7 +957,7 @@ to every element in the iterator.
 
 <a name="mapfoldl-3"></a>
 
-### mapfoldl/3 ###
+### mapfoldl/3
 
 <pre><code>
 mapfoldl(Fun, Acc0, Iterator1) -&gt; {Iterator2, AccOut}
@@ -1042,7 +982,7 @@ iterators will never return.
 
 <a name="mapfoldr-3"></a>
 
-### mapfoldr/3 ###
+### mapfoldr/3
 
 <pre><code>
 mapfoldr(Fun, Acc0, Iterator1) -&gt; {Iterator2, AccOut}
@@ -1057,7 +997,7 @@ iterators will never return.
 
 <a name="max-1"></a>
 
-### max/1 ###
+### max/1
 
 <pre><code>
 max(Iterator) -&gt; Elem
@@ -1073,7 +1013,7 @@ return.
 
 <a name="member-2"></a>
 
-### member/2 ###
+### member/2
 
 <pre><code>
 member(Elem, Iterator) -&gt; boolean()
@@ -1089,7 +1029,7 @@ Stops evaluating `Iterator` when a match is found or when
 
 <a name="merge-1"></a>
 
-### merge/1 ###
+### merge/1
 
 <pre><code>
 merge(IteratorOfIterators) -&gt; Iterator
@@ -1107,7 +1047,7 @@ The first element of each subiterator will be evaluated.
 
 <a name="merge-2"></a>
 
-### merge/2 ###
+### merge/2
 
 <pre><code>
 merge(Iterator1, Iterator2) -&gt; Iterator3
@@ -1117,7 +1057,7 @@ merge(Iterator1, Iterator2) -&gt; Iterator3
 
 Returns the sorted iterator formed by merging `Iterator1` and
 `Iterator2`. Both `Iterator1` and `Iterator2` must be sorted before
-evaluating this function.  When two elements compare equal, the
+evaluating this function. When two elements compare equal, the
 element from `Iterator1` is picked before the element from
 `Iterator2`.
 
@@ -1125,7 +1065,7 @@ The first element of each iterator will be evaluated.
 
 <a name="merge-3"></a>
 
-### merge/3 ###
+### merge/3
 
 <pre><code>
 merge(Fun, Iterator1, Iterator2) -&gt; Iterator3
@@ -1145,7 +1085,7 @@ The first element of each iterator will be evaluated.
 
 <a name="merge3-3"></a>
 
-### merge3/3 ###
+### merge3/3
 
 <pre><code>
 merge3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
@@ -1154,7 +1094,7 @@ merge3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
 <ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(C)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>(A | B | C)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1`,
-`Iterator2`, and `Iterator3`.  All of `Iterator1`, `Iterator2`, and
+`Iterator2`, and `Iterator3`. All of `Iterator1`, `Iterator2`, and
 `Iterator3` must be sorted before evaluating this function. When
 two elements compare equal, the element from `Iterator1`, if there
 is such an element, is picked before the other element, otherwise
@@ -1165,7 +1105,7 @@ The first element of each iterator will be evaluated.
 
 <a name="min-1"></a>
 
-### min/1 ###
+### min/1
 
 <pre><code>
 min(Iterator) -&gt; Elem
@@ -1181,7 +1121,7 @@ return.
 
 <a name="next-1"></a>
 
-### next/1 ###
+### next/1
 
 <pre><code>
 next(Iterator) -&gt; LazyList
@@ -1204,7 +1144,7 @@ Examples:
 
 <a name="nth-2"></a>
 
-### nth/2 ###
+### nth/2
 
 <pre><code>
 nth(N, Iterator) -&gt; Elem
@@ -1223,7 +1163,7 @@ Example:
 
 <a name="nthtail-2"></a>
 
-### nthtail/2 ###
+### nthtail/2
 
 <pre><code>
 nthtail(N, Iterator1) -&gt; Iterator2
@@ -1237,7 +1177,7 @@ iterator.
 
 <a name="partition-2"></a>
 
-### partition/2 ###
+### partition/2
 
 <pre><code>
 partition(Pred, Iterator1) -&gt; {Satisfying, NotSatisfying}
@@ -1271,11 +1211,11 @@ Each result iterator will evaluate elements of the original
 iterator independently. If both are evaluated, this will result in
 all elements being evaluated twice.
 
-__See also:__ [splitwith/2](#splitwith-2).
+**See also:** [splitwith/2](#splitwith-2).
 
 <a name="prefix-2"></a>
 
-### prefix/2 ###
+### prefix/2
 
 <pre><code>
 prefix(Iterator1, Iterator2) -&gt; boolean()
@@ -1290,7 +1230,7 @@ both iterators are identical and infinite, will never return.
 
 <a name="reverse-1"></a>
 
-### reverse/1 ###
+### reverse/1
 
 <pre><code>
 reverse(Iterator1) -&gt; Iterator2
@@ -1306,7 +1246,7 @@ return.
 
 <a name="reverse-2"></a>
 
-### reverse/2 ###
+### reverse/2
 
 <pre><code>
 reverse(Iterator1, TailIterator) -&gt; Iterator2
@@ -1329,7 +1269,7 @@ iterators will never return.
 
 <a name="search-2"></a>
 
-### search/2 ###
+### search/2
 
 <pre><code>
 search(Pred, Iterator) -&gt; {value, Value} | false
@@ -1346,7 +1286,7 @@ ever found, infinite iterators will never return.
 
 <a name="seq-2"></a>
 
-### seq/2 ###
+### seq/2
 
 <pre><code>
 seq(From, To) -&gt; Iterator
@@ -1354,11 +1294,11 @@ seq(From, To) -&gt; Iterator
 
 <ul class="definitions"><li><code>From = integer()</code></li><li><code>To = integer()</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>(integer())</code></li></ul>
 
-__See also:__ [seq/3](#seq-3).
+**See also:** [seq/3](#seq-3).
 
 <a name="seq-3"></a>
 
-### seq/3 ###
+### seq/3
 
 <pre><code>
 seq(From, To, Incr) -&gt; Iterator
@@ -1370,16 +1310,16 @@ Returns an iterator over a sequence of integers that starts with
 `From` and contains the successive results of adding `Incr` to the
 previous element, until `To` is reached or passed (in the latter
 case, `To` is not an element of the sequence). `Incr` defaults to
+
 1.
 
 Failures:
 
-* If `To < From - Incr` and `Incr > 0`.
+- If `To < From - Incr` and `Incr > 0`.
 
-* If `To > From - Incr` and `Incr < 0`.
+- If `To > From - Incr` and `Incr < 0`.
 
-* If `Incr =:= 0` and `From =/= To`.
-
+- If `Incr =:= 0` and `From =/= To`.
 
 The following equalities hold for all sequences:
 
@@ -1390,7 +1330,7 @@ The following equalities hold for all sequences:
 
 <a name="sort-1"></a>
 
-### sort/1 ###
+### sort/1
 
 <pre><code>
 sort(Iterator1) -&gt; Iterator2
@@ -1405,7 +1345,7 @@ return.
 
 <a name="sort-2"></a>
 
-### sort/2 ###
+### sort/2
 
 <pre><code>
 sort(Fun, Iterator1) -&gt; Iterator2
@@ -1423,7 +1363,7 @@ return.
 
 <a name="split-2"></a>
 
-### split/2 ###
+### split/2
 
 <pre><code>
 split(N, Iterator1) -&gt; {Iterator2, Iterator3}
@@ -1440,7 +1380,7 @@ Evaluates the first `N` elements of `Iterator1` to construct
 
 <a name="splitwith-2"></a>
 
-### splitwith/2 ###
+### splitwith/2
 
 <pre><code>
 splitwith(Pred, Iterator1) -&gt; {Iterator2, Iterator3}
@@ -1474,11 +1414,11 @@ Evaluates the elements of `Iterator` for which `Pred(Elem)` returns
 `false`. If `Pred` never returns `false`, infinite iterators will
 not return.
 
-__See also:__ [partition/2](#partition-2).
+**See also:** [partition/2](#partition-2).
 
 <a name="sublist-2"></a>
 
-### sublist/2 ###
+### sublist/2
 
 <pre><code>
 sublist(Iterator1, Len) -&gt; Iterator2
@@ -1486,11 +1426,11 @@ sublist(Iterator1, Len) -&gt; Iterator2
 
 <ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Len = non_neg_integer()</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li></ul>
 
-__See also:__ [sublist/3](#sublist-3).
+**See also:** [sublist/3](#sublist-3).
 
 <a name="sublist-3"></a>
 
-### sublist/3 ###
+### sublist/3
 
 <pre><code>
 sublist(Iterator1, Start, Len) -&gt; Iterator2
@@ -1505,7 +1445,7 @@ the whole iterator is returned.
 
 <a name="subtract-2"></a>
 
-### subtract/2 ###
+### subtract/2
 
 <pre><code>
 subtract(Iterator1, Iterator2) -&gt; Iterator3
@@ -1528,7 +1468,7 @@ Example:
 
 <a name="suffix-2"></a>
 
-### suffix/2 ###
+### suffix/2
 
 <pre><code>
 suffix(Iterator1, Iterator2) -&gt; boolean()
@@ -1544,7 +1484,7 @@ iterators will never return.
 
 <a name="sum-1"></a>
 
-### sum/1 ###
+### sum/1
 
 <pre><code>
 sum(Iterator) -&gt; Sum
@@ -1559,7 +1499,7 @@ return.
 
 <a name="takewhile-2"></a>
 
-### takewhile/2 ###
+### takewhile/2
 
 <pre><code>
 takewhile(Pred, Iterator1) -&gt; Iterator2
@@ -1573,7 +1513,7 @@ iterator for which all elements satisfy the predicate.
 
 <a name="tl-1"></a>
 
-### tl/1 ###
+### tl/1
 
 <pre><code>
 tl(Iterator1) -&gt; Iterator2
@@ -1595,7 +1535,7 @@ Failure: `badarg` if `Iterator1` is empty.
 
 <a name="to_list-1"></a>
 
-### to_list/1 ###
+### to_list/1
 
 <pre><code>
 to_list(Iterator) -&gt; List
@@ -1608,7 +1548,7 @@ produced. Infinite iterators will never return.
 
 <a name="to_map-1"></a>
 
-### to_map/1 ###
+### to_map/1
 
 <pre><code>
 to_map(Iterator) -&gt; Map
@@ -1625,7 +1565,7 @@ which will appear in the final map.
 
 <a name="ukeymerge-3"></a>
 
-### ukeymerge/3 ###
+### ukeymerge/3
 
 <pre><code>
 ukeymerge(N, TupleIterator1, TupleIterator2) -&gt; TupleIterator3
@@ -1644,7 +1584,7 @@ The first element of each iterator will be evaluated.
 
 <a name="ukeysort-2"></a>
 
-### ukeysort/2 ###
+### ukeysort/2
 
 <pre><code>
 ukeysort(N, TupleIterator1) -&gt; TupleIterator2
@@ -1662,7 +1602,7 @@ return.
 
 <a name="umerge-1"></a>
 
-### umerge/1 ###
+### umerge/1
 
 <pre><code>
 umerge(IteratorOfIterators) -&gt; Iterator
@@ -1680,7 +1620,7 @@ The first element of each subiterator will be evaluated.
 
 <a name="umerge-2"></a>
 
-### umerge/2 ###
+### umerge/2
 
 <pre><code>
 umerge(Iterator1, Iterator2) -&gt; Iterator3
@@ -1698,7 +1638,7 @@ The first element of each iterator will be evaluated.
 
 <a name="umerge-3"></a>
 
-### umerge/3 ###
+### umerge/3
 
 <pre><code>
 umerge(Fun, Iterator1, Iterator2) -&gt; Iterator3
@@ -1718,7 +1658,7 @@ The first element of each iterator will be evaluated.
 
 <a name="umerge3-3"></a>
 
-### umerge3/3 ###
+### umerge3/3
 
 <pre><code>
 umerge3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
@@ -1727,7 +1667,7 @@ umerge3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
 <ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(A)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(B)</code></li><li><code>Iterator3 = <a href="#type-iterator">iterator</a>(C)</code></li><li><code>Iterator4 = <a href="#type-iterator">iterator</a>(A | B | C)</code></li></ul>
 
 Returns the sorted iterator formed by merging `Iterator1`,
-`Iterator2`, and `Iterator3`.  All of `Iterator1`, `Iterator2`, and
+`Iterator2`, and `Iterator3`. All of `Iterator1`, `Iterator2`, and
 `Iterator3` must be sorted and contain no duplicates before
 evaluating this function. When two elements compare equal, the
 element from `Iterator1` is picked if there is such an element,
@@ -1738,7 +1678,7 @@ The first element of each iterator will be evaluated.
 
 <a name="unfold-2"></a>
 
-### unfold/2 ###
+### unfold/2
 
 <pre><code>
 unfold(Fun, Acc0) -&gt; Iterator
@@ -1755,7 +1695,7 @@ value. If iteration is complete, `Fun` should return `none`.
 
 <a name="unzip-1"></a>
 
-### unzip/1 ###
+### unzip/1
 
 <pre><code>
 unzip(Iterator1) -&gt; {Iterator2, Iterator3}
@@ -1769,7 +1709,7 @@ second iterator contains the second element of each tuple.
 
 <a name="unzip3-1"></a>
 
-### unzip3/1 ###
+### unzip3/1
 
 <pre><code>
 unzip3(Iterator1) -&gt; {Iterator2, Iterator3, Iterator4}
@@ -1784,7 +1724,7 @@ contains the third element of each tuple.
 
 <a name="usort-1"></a>
 
-### usort/1 ###
+### usort/1
 
 <pre><code>
 usort(Iterator1) -&gt; Iterator2
@@ -1801,7 +1741,7 @@ return.
 
 <a name="usort-2"></a>
 
-### usort/2 ###
+### usort/2
 
 <pre><code>
 usort(Fun, Iterator1) -&gt; Iterator2
@@ -1820,7 +1760,7 @@ return.
 
 <a name="zip-2"></a>
 
-### zip/2 ###
+### zip/2
 
 <pre><code>
 zip(Iterator1, Iterator2) -&gt; Iterator3
@@ -1835,7 +1775,7 @@ corresponding element in the second iterator.
 
 <a name="zip3-3"></a>
 
-### zip3/3 ###
+### zip3/3
 
 <pre><code>
 zip3(Iterator1, Iterator2, Iterator3) -&gt; Iterator4
@@ -1851,7 +1791,7 @@ is taken from the corresponding element in the third iterator.
 
 <a name="zipwith-3"></a>
 
-### zipwith/3 ###
+### zipwith/3
 
 <pre><code>
 zipwith(Combine, Iterator1, Iterator2) -&gt; Iterator3
@@ -1876,7 +1816,7 @@ Example:
 
 <a name="zipwith3-4"></a>
 
-### zipwith3/4 ###
+### zipwith3/4
 
 <pre><code>
 zipwith3(Combine, Iterator1, Iterator2, Iterator3) -&gt; Iterator4
@@ -1910,4 +1850,3 @@ Examples:
   >   llists:seq(1, 3))).
   [[a,x,1],[b,y,2],[c,z,3]]
 ```
-

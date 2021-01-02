@@ -1,0 +1,9 @@
+---
+version: "3"
+
+services:
+  check:
+    build:
+      context: .
+    container_name: llists
+    command: check

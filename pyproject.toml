@@ -1,0 +1,11 @@
+[tool.poetry]
+name = "llists"
+version = "1.0.0"
+description = "Dependencies for the llists project."
+authors = ["john@krukoff.us"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+docker-compose = "^1.27"
+html2text = "*"
+yamllint = "^1.25"

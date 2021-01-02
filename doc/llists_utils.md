@@ -1,17 +1,16 @@
+# Module llists_utils
 
-
-# Module llists_utils #
-* [Description](#description)
-* [Data Types](#types)
-* [Function Index](#index)
-* [Function Details](#functions)
+- [Description](#description)
+- [Data Types](#types)
+- [Function Index](#index)
+- [Function Details](#functions)
 
 Additional iterator utilities that are not replicas of `lists`
 module functionality.
 
 <a name="description"></a>
 
-## Description ##
+## Description
 
 These functions are kept separate to avoid
 any future name clashes with additions to the stdlib.
@@ -23,13 +22,9 @@ values passed as lists and lazily evaluated ones passed as
 iterators.
 <a name="types"></a>
 
-## Data Types ##
+## Data Types
 
-
-
-
-### <a name="type-permutation_options">permutation_options()</a> ###
-
+### <a name="type-permutation_options">permutation_options()</a>
 
 <pre><code>
 permutation_options() = <a href="proplists.md#type-proplist">proplists:proplist()</a>
@@ -37,8 +32,7 @@ permutation_options() = <a href="proplists.md#type-proplist">proplists:proplist(
 
 <a name="index"></a>
 
-## Function Index ##
-
+## Function Index
 
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#choice-1">choice/1</a></td><td>
 Create an infinite iterator that returns random elements from the
@@ -65,14 +59,13 @@ Discards repeated values in a sorted iterator according to a
 provided equality function <code>Fun(A, B)</code> which should return <code>true</code>
 when <code>A</code> and <code>B</code> are equal and <code>false</code> otherwise.</td></tr></table>
 
-
 <a name="functions"></a>
 
-## Function Details ##
+## Function Details
 
 <a name="choice-1"></a>
 
-### choice/1 ###
+### choice/1
 
 <pre><code>
 choice(Choices) -&gt; Iterator
@@ -86,7 +79,7 @@ and returns the same unique sequence each time it is evaluated.
 
 <a name="combinations-2"></a>
 
-### combinations/2 ###
+### combinations/2
 
 <pre><code>
 combinations(N, Choices) -&gt; Iterator
@@ -94,11 +87,11 @@ combinations(N, Choices) -&gt; Iterator
 
 <ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
-__See also:__ [combinations/3](#combinations-3).
+**See also:** [combinations/3](#combinations-3).
 
 <a name="combinations-3"></a>
 
-### combinations/3 ###
+### combinations/3
 
 <pre><code>
 combinations(N, Choices, Options) -&gt; Iterator
@@ -127,7 +120,7 @@ combinations will also be sorted.
 
 <a name="cycle-1"></a>
 
-### cycle/1 ###
+### cycle/1
 
 <pre><code>
 cycle(Iterator1) -&gt; Iterator2
@@ -140,7 +133,7 @@ elements in the given iterator.
 
 <a name="enumerate-1"></a>
 
-### enumerate/1 ###
+### enumerate/1
 
 <pre><code>
 enumerate(Iterator1) -&gt; Iterator2
@@ -163,7 +156,7 @@ Example:
 
 <a name="group-2"></a>
 
-### group/2 ###
+### group/2
 
 <pre><code>
 group(Length, Iterator1) -&gt; Iterator2
@@ -189,7 +182,7 @@ final group, instead a smaller group is returned.
 
 <a name="groupwith-2"></a>
 
-### groupwith/2 ###
+### groupwith/2
 
 <pre><code>
 groupwith(Pred, Iterator1) -&gt; Iterator2
@@ -220,7 +213,7 @@ iterator, the first evaluation of `Iterator2` will never return.
 
 <a name="permutations-2"></a>
 
-### permutations/2 ###
+### permutations/2
 
 <pre><code>
 permutations(N, Choices) -&gt; Iterator
@@ -228,11 +221,11 @@ permutations(N, Choices) -&gt; Iterator
 
 <ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
-__See also:__ [permutations/3](#permutations-3).
+**See also:** [permutations/3](#permutations-3).
 
 <a name="permutations-3"></a>
 
-### permutations/3 ###
+### permutations/3
 
 <pre><code>
 permutations(N, Choices, Options) -&gt; Iterator
@@ -261,7 +254,7 @@ permutations will also be sorted.
 
 <a name="random-0"></a>
 
-### random/0 ###
+### random/0
 
 <pre><code>
 random() -&gt; Iterator
@@ -273,11 +266,11 @@ Create an infinite iterator that returns random floats in the range
 `[0.0, 1.0)`. Each iterator returns a unique sequence and returns
 the same unique sequence each time it is evaluated.
 
-__See also:__ [rand:uniform/0](rand.md#uniform-0).
+**See also:** [rand:uniform/0](rand.md#uniform-0).
 
 <a name="random-1"></a>
 
-### random/1 ###
+### random/1
 
 <pre><code>
 random(N) -&gt; Iterator
@@ -289,11 +282,11 @@ Create an infinite iterator that returns random integers in the range
 `[1, N)`. Each iterator returns a unique sequence and returns
 the same unique sequence each time it is evaluated.
 
-__See also:__ [rand:uniform/1](rand.md#uniform-1).
+**See also:** [rand:uniform/1](rand.md#uniform-1).
 
 <a name="unique-1"></a>
 
-### unique/1 ###
+### unique/1
 
 <pre><code>
 unique(Iterator1) -&gt; Iterator2
@@ -303,11 +296,11 @@ unique(Iterator1) -&gt; Iterator2
 
 As `unique/2`, but with `==` as a equality function.
 
-__See also:__ [unique/2](#unique-2).
+**See also:** [unique/2](#unique-2).
 
 <a name="unique-2"></a>
 
-### unique/2 ###
+### unique/2
 
 <pre><code>
 unique(Fun, Iterator1) -&gt; Iterator2
@@ -332,4 +325,3 @@ Example:
 
 Infinite iterators of equal values will cause the first evaluation
 of `Iterator2` to never return.
-

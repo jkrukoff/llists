@@ -1,3 +1,0 @@
-docker-compose
-html2text
-yamllint
