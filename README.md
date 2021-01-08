@@ -23,7 +23,7 @@ An interface identical to the stdlib `lists` module is implemented, allowing
 for easy conversion between list processing code and lazy list processing
 code.
 
-![Lazy Construction Worker](lazy.png)
+![Lazy Construction Worker](doc/lazy.png)
 
 ## Getting Started
 

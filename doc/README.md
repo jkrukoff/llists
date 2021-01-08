@@ -6,6 +6,12 @@ Copyright (c) 2021 John Krukoff
 
 **Authors:** John Krukoff ([`github@cultist.org`](mailto:github@cultist.org)).
 
+## Modules
+
+<table width="100%" border="0" summary="list of modules">
+<tr><td><a href="llists.md" class="module">llists</a></td></tr>
+<tr><td><a href="llists_utils.md" class="module">llists_utils</a></td></tr></table>
+
 ## Overview
 
 An Erlang/OTP library for working with iterators; an opaque type that is
@@ -162,9 +168,3 @@ Other implementations that were used for reference:
 
 - The [infinite
   lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.md) example from the Erlang documentation.
-
-## Modules
-
-<table width="100%" border="0" summary="list of modules">
-<tr><td><a href="llists.md" class="module">llists</a></td></tr>
-<tr><td><a href="llists_utils.md" class="module">llists_utils</a></td></tr></table>

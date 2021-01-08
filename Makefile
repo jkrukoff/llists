@@ -97,8 +97,9 @@ doc: $(addsuffix .png,$(basename $(wildcard doc/*.pic)))
 	$(REBAR) edoc
 	$(REBAR) as markdown edoc
 	for f in README.md doc/README.md; do \
-		ed --verbose --restricted "$${f}" < bin/move-modules-section.ed; \
+		ed --verbose "$${f}" < bin/move-modules-section.ed; \
 	done
+	ed --verbose README.md < bin/fix-image-path.ed
 	$(MAKE) fmt-prettier
 
 doc/%.png: require-pic2plot doc/%.pic
