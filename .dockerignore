@@ -1,7 +1,3 @@
-# Docker build instructions.
-Dockerfile
-.dockerignore
-
 # Revision control.
 .git/
 **/.gitignore
@@ -12,6 +8,8 @@ tags
 
 # Build tools in base image.
 ./rebar3
+
+# Downloaded packages.
 ./node_modules
 
 # Local build artifacts.
