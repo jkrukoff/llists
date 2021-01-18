@@ -15,8 +15,14 @@ all: $(DEPS_TARGETS)
 	$(MAKE) check compile doc
 
 .PHONY: check
+ifdef DOCKER
 ## Run all checks and linting.
+check: require-poetry
+	poetry run docker-compose build
+	poetry run docker-compose run check -j2 --output-sync check
+else
 check: check-test check-erlfmt check-hadolint check-poetry check-npm check-markdownlint check-yamllint check-prettier
+endif
 
 .PHONY: check-erlfmt
 ## Check erlang file formatting.
