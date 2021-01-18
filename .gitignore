@@ -13,18 +13,11 @@ rebar3
 rebar3.crashdump
 .rebar3
 
-# CI secrets.
-codeship.aes
-deploy/dockercfg.json
-deploy/env.env
-config/test.config
-
 # Optional python dependencies.
 .virtualenv
 
 # Optional node.js dependencies.
 node_modules/
-package-lock.json
 
 # Vim files.
 *.swo
