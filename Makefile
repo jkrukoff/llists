@@ -16,7 +16,7 @@ all: $(DEPS_TARGETS)
 
 .PHONY: check
 ## Run all checks and linting.
-check: check-test check-erlfmt check-hadolint check-markdownlint check-yamllint check-prettier
+check: check-test check-erlfmt check-hadolint check-poetry check-npm check-markdownlint check-yamllint check-prettier
 
 .PHONY: check-erlfmt
 ## Check erlang file formatting.
@@ -36,13 +36,23 @@ check-hadolint: require-hadolint
 .PHONY: check-test
 ## Run the unit test suite.
 check-test: require-rebar3
-	$(REBAR) as prod dialyzer
+	$(REBAR) dialyzer
 	$(REBAR) as test do eunit, proper, lint
 
 .PHONY: check-markdownlint
 ## Lint Markdown files.
 check-markdownlint: require-markdownlint-cli2
 	markdownlint-cli2 CHANGELOG.md
+
+.PHONY: check-npm
+## Check for security issues in node.js dependencies.
+check-npm: require-npm
+	npm audit
+
+.PHONY: check-poetry
+## Lint Poetry configuration for python dependencies.
+check-poetry: require-poetry
+	poetry check
 
 .PHONY: check-prettier
 ## Check JSON, Markdown and YAML file formatting.

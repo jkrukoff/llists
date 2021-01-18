@@ -1,0 +1,15 @@
+name: Check
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run the Makefile check rule in a docker container.
+      run: docker-compose run check -j2 --output-sync check
