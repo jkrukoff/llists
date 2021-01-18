@@ -1,4 +1,5 @@
 ignore: |
-  /_build
+  /.git
   /.virtualenv
-  /docker/.volumes
+  /_build
+  /node_modules
