@@ -32,6 +32,7 @@ COPY bin/download-dep.bash ./bin/
 # hadolint ignore=DL3008
 RUN \
 	PATH="/opt/app/bin:${PATH}" && \
+	chmod 755 bin/download-dep.bash && \
 	(curl -sSL https://deb.nodesource.com/setup_lts.x | bash -) && \
 	apt-get update && \
 	apt-get install -y --no-install-recommends 'nodejs' 'plotutils=2.6-10' 'python3-pip=18.1-5' 'shellcheck=0.5.0-3' && \
