@@ -1,12 +1,13 @@
 .DEFAULT_GOAL := all
 .SHELLFLAGS := -e -o pipefail -c
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
-PATH := node_modules/.bin:$(PATH)
+PATH := bin:node_modules/.bin:$(PATH)
 SHELL := bash
 
 DEPS_TARGETS := package-lock.json poetry.lock rebar.lock
 PRETTIER_GLOBS := *.json *.md doc/*.md *.yaml
 REBAR ?= ${if ${wildcard ./rebar3}, ./rebar3, rebar3}
+SHFMT_ARGS := -i 2 -ci -sr
 
 .PHONY: all
 ## Build everything.
@@ -21,7 +22,7 @@ check: require-poetry
 	poetry run docker-compose build
 	poetry run docker-compose run check -j2 --output-sync check
 else
-check: check-test check-erlfmt check-hadolint check-poetry check-npm check-markdownlint check-yamllint check-prettier
+check: check-test check-erlfmt check-shellcheck check-hadolint check-poetry check-npm check-markdownlint check-yamllint check-prettier check-shfmt
 endif
 
 .PHONY: check-erlfmt
@@ -65,6 +66,16 @@ check-poetry: require-poetry
 check-prettier: require-prettier
 	prettier --check $(PRETTIER_GLOBS)
 
+.PHONY: check-shellcheck
+## Lint shell scripts.
+check-shellcheck: require-shellcheck
+	shellcheck bin/*.bash
+
+.PHONY: check-shfmt
+## Check shell script formatting.
+check-shfmt: require-shfmt
+	shfmt -d $(SHFMT_ARGS) bin/*.bash
+
 .PHONY: check-yamllint
 ## Lint YAML files.
 check-yamllint: require-poetry
@@ -102,10 +113,11 @@ deps-rebar3: require-rebar3
 	rebar3 get-deps
 	rebar3 as test get-deps
 	rebar3 as markdown get-deps
-	rebar3 plugins upgrade rebar3_hex
-	for plugin in erlfmt geas_rebar3 rebar3_lint rebar3_proper; do\
-		rebar3 as test plugins upgrade $${plugin}; \
-	done
+# Skip upgrading plugins if this is the first ever build. This is an
+# optimization for Dockerfile build times.
+ifneq ($(wildcard _build/.),)
+	upgrade-rebar3-plugins.bash
+endif
 
 .PHONY: doc
 ## Build documentation.
@@ -141,7 +153,7 @@ help:
 
 .PHONY: fmt
 ## Reformat all files.
-fmt: fmt-erlfmt fmt-prettier
+fmt: fmt-erlfmt fmt-prettier fmt-shfmt
 
 .PHONY: fmt-erlfmt
 ## Reformat all erlang files.
@@ -153,6 +165,11 @@ fmt-erlfmt: require-rebar3
 ## Reformat JSON, Markdown and YAML files.
 fmt-prettier: require-prettier
 	prettier --write $(PRETTIER_GLOBS)
+
+.PHONY: fmt-shfmt
+## Reformat shell script files.
+fmt-shfmt: require-shfmt
+	shfmt -w $(SHFMT_ARGS) bin/*.bash
 
 package-lock.json: require-npm package.json
 	npm update
@@ -169,7 +186,7 @@ rebar3:
 	curl -o rebar3 https://s3.amazonaws.com/rebar3/rebar3
 	chmod 755 rebar3
 
-REQUIREMENTS = $(addprefix require-,hadolint prettier markdownlint-cli2 npm pic2plot poetry rebar3)
+REQUIREMENTS = $(addprefix require-,hadolint prettier markdownlint-cli2 npm pic2plot poetry rebar3 shellcheck shfmt)
 
 .PHONY: $(REQUIREMENTS)
 $(REQUIREMENTS): required=$(patsubst require-%,%,$@)
