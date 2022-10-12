@@ -6,6 +6,5 @@ authors = ["john@krukoff.us"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
-docker-compose = "^1.27"
-html2text = "*"
-yamllint = "^1.25"
+html2text = "^2020.1.16"
+yamllint = "^1.28"

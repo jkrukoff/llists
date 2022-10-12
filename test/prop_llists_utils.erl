@@ -88,7 +88,7 @@ prop_enumerate() ->
             llists_utils:enumerate(
                 llists:from_list(List)
             )
-        ) == enumerate(List)
+        ) == lists:enumerate(List)
     ).
 
 prop_group() ->
@@ -259,9 +259,6 @@ duplicates() ->
 %%% Internal Functions
 %%%===================================================================
 
-enumerate(List) when is_list(List) ->
-    lists:zip(lists:seq(1, length(List)), List).
-
 remove(N, List) when N >= 0, is_list(List) ->
     {Before, [_ | After]} = lists:split(N - 1, List),
     Before ++ After.
@@ -273,7 +270,7 @@ combinations(_, []) ->
 combinations(N, [Head | Tail]) ->
     [
         [Head | Choices]
-        || Choices <- combinations(N - 1, Tail)
+     || Choices <- combinations(N - 1, Tail)
     ] ++ combinations(N, Tail).
 
 rep_combinations(0, _) ->
@@ -283,7 +280,7 @@ rep_combinations(_, []) ->
 rep_combinations(N, [Head | Tail] = All) ->
     [
         [Head | Choices]
-        || Choices <- rep_combinations(N - 1, All)
+     || Choices <- rep_combinations(N - 1, All)
     ] ++ rep_combinations(N, Tail).
 
 permutations(0, _) ->
@@ -293,8 +290,8 @@ permutations(_, []) ->
 permutations(N, All) ->
     [
         [Head | Tail]
-        || {Index, Head} <- enumerate(All),
-           Tail <- permutations(N - 1, remove(Index, All))
+     || {Index, Head} <- lists:enumerate(All),
+        Tail <- permutations(N - 1, remove(Index, All))
     ].
 
 rep_permutations(0, _) ->
@@ -304,6 +301,6 @@ rep_permutations(_, []) ->
 rep_permutations(N, All) ->
     [
         [Head | Tail]
-        || Head <- All,
-           Tail <- rep_permutations(N - 1, All)
+     || Head <- All,
+        Tail <- rep_permutations(N - 1, All)
     ].

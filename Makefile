@@ -6,13 +6,16 @@ SHELL := bash
 
 DEPS_TARGETS := package-lock.json poetry.lock rebar.lock
 PRETTIER_GLOBS := *.json *.md doc/*.md *.yaml
+REBAR_PROFILES := test chunk html markdown
 REBAR ?= ${if ${wildcard ./rebar3}, ./rebar3, rebar3}
+REQUIREMENTS := hadolint prettier markdownlint-cli2 npm pic2plot poetry rebar3 shellcheck shfmt
+REQUIREMENT_TARGETS := $(addprefix require-,$(REQUIREMENTS))
 SHFMT_ARGS := -i 2 -ci -sr
 
 .PHONY: all
 ## Build everything.
 all: $(DEPS_TARGETS)
-	$(MAKE) deps
+	$(MAKE) check-requirements deps
 	$(MAKE) check compile doc
 
 .PHONY: check
@@ -22,7 +25,7 @@ check: require-poetry
 	poetry run docker-compose build
 	poetry run docker-compose run check -j2 --output-sync check
 else
-check: check-test check-erlfmt check-shellcheck check-hadolint check-poetry check-npm check-markdownlint check-yamllint check-prettier check-shfmt
+check: check-rebar check-erlfmt check-shellcheck check-hadolint check-poetry check-npm check-hank check-markdownlint check-yamllint check-prettier check-shfmt
 endif
 
 .PHONY: check-erlfmt
@@ -40,11 +43,10 @@ check-geas: require-rebar3
 check-hadolint: require-hadolint
 	hadolint Dockerfile
 
-.PHONY: check-test
-## Run the unit test suite.
-check-test: require-rebar3
-	$(REBAR) dialyzer
-	$(REBAR) as test do eunit, proper, lint
+.PHONY: check-hank
+## Check for unused preprocessor code.
+check-hank: require-rebar3
+	$(REBAR) as test hank
 
 .PHONY: check-markdownlint
 ## Lint Markdown files.
@@ -65,6 +67,16 @@ check-poetry: require-poetry
 ## Check JSON, Markdown and YAML file formatting.
 check-prettier: require-prettier
 	prettier --check $(PRETTIER_GLOBS)
+
+.PHONY: check-rebar
+## Run static analysis, unit tests, property tests and linting.
+check-rebar: require-rebar3
+	$(REBAR) dialyzer
+	$(REBAR) as test do eunit, proper, lint
+
+.PHONY: check-requirements
+## Check that all external requirements are installed.
+check-requirements: $(REQUIREMENT_TARGETS)
 
 .PHONY: check-shellcheck
 ## Lint shell scripts.
@@ -109,24 +121,24 @@ deps-poetry: require-poetry
 .PHONY: deps-rebar3
 ## Install erlang based dependencies.
 deps-rebar3: require-rebar3
-	rebar3 update
-	rebar3 get-deps
-	rebar3 as test get-deps
-	rebar3 as markdown get-deps
+	$(REBAR) do update, upgrade --all
+	$(foreach profile,$(REBAR_PROFILES),$(REBAR) as $(profile) upgrade --all &&) true
 # Skip upgrading plugins if this is the first ever build. This is an
 # optimization for Dockerfile build times.
 ifneq ($(wildcard _build/.),)
-	upgrade-rebar3-plugins.bash
+	$(REBAR) plugins upgrade --all
+	$(foreach profile,$(REBAR_PROFILES),$(REBAR) as $(profile) plugins upgrade --all &&) true
 endif
 
 .PHONY: doc
 ## Build documentation.
 doc: $(addsuffix .png,$(basename $(wildcard doc/*.pic)))
-	$(REBAR) edoc
+	$(REBAR) as chunk edoc
+	$(REBAR) as html edoc
 	$(REBAR) as markdown edoc
-	for f in README.md doc/README.md; do \
-		ed --verbose "$${f}" < bin/move-modules-section.ed; \
-	done
+	$(foreach f, README.md doc/README.md, ed --verbose '$(f)' < bin/move-modules-section.ed &&) true
+	# Assumes gnu sed for in place editing support.
+	$(foreach f, README.md doc/README.md, sed -E --in-place --file bin/fix-external-links.sed '$(f)' &&) true
 	ed --verbose README.md < bin/fix-image-path.ed
 	$(MAKE) fmt-prettier
 
@@ -179,17 +191,15 @@ poetry.lock: require-poetry pyproject.toml
 
 rebar.lock: require-rebar3 rebar.config
 	$(REBAR) update
-	$(REBAR) unlock
-	$(REBAR) upgrade
+	$(REBAR) unlock --all
+	$(REBAR) upgrade --all
 
 rebar3:
 	curl -o rebar3 https://s3.amazonaws.com/rebar3/rebar3
 	chmod 755 rebar3
 
-REQUIREMENTS = $(addprefix require-,hadolint prettier markdownlint-cli2 npm pic2plot poetry rebar3 shellcheck shfmt)
-
-.PHONY: $(REQUIREMENTS)
-$(REQUIREMENTS): required=$(patsubst require-%,%,$@)
-$(REQUIREMENTS): require-%:
+.PHONY: $(REQUIREMENT_TARGETS)
+$(REQUIREMENT_TARGETS): required=$(patsubst require-%,%,$@)
+$(REQUIREMENT_TARGETS): require-%:
 	@command -v $(required) > /dev/null || \
 		(printf "%s%s%s\n" "$$(tput setaf 3)" '"$(required)" is required, please install.' "$$(tput sgr0)"; exit 1)

@@ -27,7 +27,7 @@ iterators.
 ### <a name="type-permutation_options">permutation_options()</a>
 
 <pre><code>
-permutation_options() = <a href="proplists.md#type-proplist">proplists:proplist()</a>
+permutation_options() = <a href="/home/john/Local/stdlib/doc/proplists.md#type-proplist">proplists:proplist()</a>
 </code></pre>
 
 <a name="index"></a>
@@ -40,10 +40,7 @@ given list of <code>Choices</code>.</td></tr><tr><td valign="top"><a href="#comb
 Create an iterator that returns all combinations of elements from
 <code>Choices</code> that are <code>N</code> elements long.</td></tr><tr><td valign="top"><a href="#cycle-1">cycle/1</a></td><td>
 Create an infinite iterator that repeatedly returns the sequence of
-elements in the given iterator.</td></tr><tr><td valign="top"><a href="#enumerate-1">enumerate/1</a></td><td>
-Given an existing <code>Iterator1</code> creates a new <code>Iterator2</code> which
-returns each element of the original iterator as a tuple of the
-number of elements returned and the element itself.</td></tr><tr><td valign="top"><a href="#group-2">group/2</a></td><td>
+elements in the given iterator.</td></tr><tr><td valign="top"><a href="#enumerate-1">enumerate/1</a></td><td>(<em>Deprecated</em>.) </td></tr><tr><td valign="top"><a href="#group-2">group/2</a></td><td>
 Create an iterator that returns groups of elements from <code>Iterator1</code>
 as a list of at least <code>Length</code> elements.</td></tr><tr><td valign="top"><a href="#groupwith-2">groupwith/2</a></td><td>
 Create an iterator that returns groups of elements from <code>Iterator1</code>
@@ -54,7 +51,7 @@ Create an infinite iterator that returns random floats in the range
 <code>[0.0, 1.0)</code>.</td></tr><tr><td valign="top"><a href="#random-1">random/1</a></td><td>
 Create an infinite iterator that returns random integers in the range
 <code>[1, N)</code>.</td></tr><tr><td valign="top"><a href="#unique-1">unique/1</a></td><td>
-As <code>unique/2</code>, but with <code>==</code> as a equality function.</td></tr><tr><td valign="top"><a href="#unique-2">unique/2</a></td><td>
+As <code>unique/2</code>, but with <code>==</code> as the equality function.</td></tr><tr><td valign="top"><a href="#unique-2">unique/2</a></td><td>
 Discards repeated values in a sorted iterator according to a
 provided equality function <code>Fun(A, B)</code> which should return <code>true</code>
 when <code>A</code> and <code>B</code> are equal and <code>false</code> otherwise.</td></tr></table>
@@ -71,7 +68,7 @@ when <code>A</code> and <code>B</code> are equal and <code>false</code> otherwis
 choice(Choices) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>Choices = [Elem, ...]</code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li></ul>
+<ul class="definitions"><li><code>Choices = [Elem, ...]</code></li><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li></ul>
 
 Create an infinite iterator that returns random elements from the
 given list of `Choices`. Each iterator returns a unique sequence
@@ -85,7 +82,7 @@ and returns the same unique sequence each time it is evaluated.
 combinations(N, Choices) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
 **See also:** [combinations/3](#combinations-3).
 
@@ -97,7 +94,7 @@ combinations(N, Choices) -&gt; Iterator
 combinations(N, Choices, Options) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Options = <a href="#type-permutation_options">permutation_options()</a></code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Options = <a href="#type-permutation_options">permutation_options()</a></code></li><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
 Create an iterator that returns all combinations of elements from
 `Choices` that are `N` elements long. If the `repetitions` property
@@ -126,7 +123,7 @@ combinations will also be sorted.
 cycle(Iterator1) -&gt; Iterator2
 </code></pre>
 
-<ul class="definitions"><li><code>Iterator1 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li></ul>
+<ul class="definitions"><li><code>Iterator1 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li></ul>
 
 Create an infinite iterator that repeatedly returns the sequence of
 elements in the given iterator.
@@ -139,20 +136,11 @@ elements in the given iterator.
 enumerate(Iterator1) -&gt; Iterator2
 </code></pre>
 
-<ul class="definitions"><li><code>Iterator1 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="llists.md#type-iterator">llists:iterator</a>({Index, Elem})</code></li><li><code>Index = pos_integer()</code></li></ul>
+<ul class="definitions"><li><code>Iterator1 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>({Index, Elem})</code></li><li><code>Index = pos_integer()</code></li></ul>
 
-Given an existing `Iterator1` creates a new `Iterator2` which
-returns each element of the original iterator as a tuple of the
-number of elements returned and the element itself.
+**This function is deprecated:** Equivalent functionality is now present in [`llists:enumerate/1`](llists.md#enumerate-1).
 
-Example:
-
-```
-  > llists:to_list(
-       llists_utils:enumerate(
-           llits:from_list([one, two, three]))).
-  [{1,one},{2,two},{3,three}]
-```
+**See also:** [llists:enumerate/1](llists.md#enumerate-1).
 
 <a name="group-2"></a>
 
@@ -162,7 +150,7 @@ Example:
 group(Length, Iterator1) -&gt; Iterator2
 </code></pre>
 
-<ul class="definitions"><li><code>Length = pos_integer()</code></li><li><code>Iterator1 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
+<ul class="definitions"><li><code>Length = pos_integer()</code></li><li><code>Iterator1 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
 Create an iterator that returns groups of elements from `Iterator1`
 as a list of at least `Length` elements.
@@ -188,7 +176,7 @@ final group, instead a smaller group is returned.
 groupwith(Pred, Iterator1) -&gt; Iterator2
 </code></pre>
 
-<ul class="definitions"><li><code>Pred = <a href="llists.md#type-predicate">llists:predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
+<ul class="definitions"><li><code>Pred = <a href="/home/john/Local/llists/doc/llists.md#type-predicate">llists:predicate</a>(Elem)</code></li><li><code>Iterator1 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
 Create an iterator that returns groups of elements from `Iterator1`
 based on the return value of `Pred(Elem)`. If the predicate
@@ -219,7 +207,7 @@ iterator, the first evaluation of `Iterator2` will never return.
 permutations(N, Choices) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
 **See also:** [permutations/3](#permutations-3).
 
@@ -231,7 +219,7 @@ permutations(N, Choices) -&gt; Iterator
 permutations(N, Choices, Options) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Options = <a href="#type-permutation_options">permutation_options()</a></code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
+<ul class="definitions"><li><code>N = non_neg_integer()</code></li><li><code>Choices = [Elem]</code></li><li><code>Options = <a href="#type-permutation_options">permutation_options()</a></code></li><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>([Elem])</code></li></ul>
 
 Create an iterator that returns all permutations of elements from
 `Choices` that are `N` elements long. If the `repetitions` property
@@ -260,7 +248,7 @@ permutations will also be sorted.
 random() -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>(float())</code></li></ul>
+<ul class="definitions"><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(float())</code></li></ul>
 
 Create an infinite iterator that returns random floats in the range
 `[0.0, 1.0)`. Each iterator returns a unique sequence and returns
@@ -276,7 +264,7 @@ the same unique sequence each time it is evaluated.
 random(N) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>Iterator = <a href="llists.md#type-iterator">llists:iterator</a>(float())</code></li></ul>
+<ul class="definitions"><li><code>N = pos_integer()</code></li><li><code>Iterator = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(float())</code></li></ul>
 
 Create an infinite iterator that returns random integers in the range
 `[1, N)`. Each iterator returns a unique sequence and returns
@@ -292,9 +280,9 @@ the same unique sequence each time it is evaluated.
 unique(Iterator1) -&gt; Iterator2
 </code></pre>
 
-<ul class="definitions"><li><code>Iterator1 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li></ul>
+<ul class="definitions"><li><code>Iterator1 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li></ul>
 
-As `unique/2`, but with `==` as a equality function.
+As `unique/2`, but with `==` as the equality function.
 
 **See also:** [unique/2](#unique-2).
 
@@ -306,12 +294,12 @@ As `unique/2`, but with `==` as a equality function.
 unique(Fun, Iterator1) -&gt; Iterator2
 </code></pre>
 
-<ul class="definitions"><li><code>Fun = <a href="llists.md#type-compare">llists:compare</a>(A, B)</code></li><li><code>Iterator1 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>A = Elem</code></li><li><code>B = Elem</code></li></ul>
+<ul class="definitions"><li><code>Fun = <a href="/home/john/Local/llists/doc/llists.md#type-compare">llists:compare</a>(A, B)</code></li><li><code>Iterator1 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="/home/john/Local/llists/doc/llists.md#type-iterator">llists:iterator</a>(Elem)</code></li><li><code>A = Elem</code></li><li><code>B = Elem</code></li></ul>
 
 Discards repeated values in a sorted iterator according to a
 provided equality function `Fun(A, B)` which should return `true`
 when `A` and `B` are equal and `false` otherwise. All values that
-compares equal to the previously returned value are skipped until a
+compare equal to the previously returned value are skipped until a
 non-equal value is found.
 
 Example:

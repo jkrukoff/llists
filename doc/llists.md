@@ -151,6 +151,12 @@ tuple_iterator() = <a href="#type-iterator">iterator</a>(tuple())
 unfold(Elem, AccIn, AccOut) = fun((AccIn) -&gt; {Elem, AccOut} | none)
 </code></pre>
 
+### <a name="type-uniq">uniq()</a>
+
+<pre><code>
+uniq(Elem) = fun((Elem) -&gt; any())
+</code></pre>
+
 <a name="index"></a>
 
 ## Function Index
@@ -170,7 +176,13 @@ Returns a copy of <code>Iterator1</code> where the first element matching
 Drops the last element of a <code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#dropwhile-2">dropwhile/2</a></td><td>
 Drops elements <code>Elem</code> from <code>Iterator1</code> while <code>Pred(Elem)</code> returns
 true and returns the remaining iterator.</td></tr><tr><td valign="top"><a href="#duplicate-2">duplicate/2</a></td><td>
-Returns an iterator containing <code>N</code> copies of term <code>Elem</code>.</td></tr><tr><td valign="top"><a href="#filter-2">filter/2</a></td><td>
+Returns an iterator containing <code>N</code> copies of term <code>Elem</code>.</td></tr><tr><td valign="top"><a href="#enumerate-1">enumerate/1</a></td><td>
+Returns elements of <code>Iterator1</code> with each element <code>H</code> replaced by a
+tuple of form <code>{I, H}</code> where <code>I</code> is the position of <code>H</code> in
+<code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#enumerate-2">enumerate/2</a></td><td>
+Returns elements of <code>Iterator1</code> with each element <code>H</code> replaced by a
+tuple of form <code>{I, H}</code> where <code>I</code> is the position of <code>H</code> in
+<code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#filter-2">filter/2</a></td><td>
 <code>Filtered</code> is an iterator of all elements <code>Elem</code> in <code>Iterator1</code> for
 which <code>Pred(Elem)</code> returns <code>true</code>.</td></tr><tr><td valign="top"><a href="#filtermap-2">filtermap/2</a></td><td>
 Calls <code>Fun(Elem)</code> on successive elements <code>Elem</code> of <code>Iterator1</code>.</td></tr><tr><td valign="top"><a href="#flatlength-1">flatlength/1</a></td><td>
@@ -295,7 +307,12 @@ Returns the sorted iterator formed by merging <code>Iterator1</code> and
 Returns the sorted iterator formed by merging <code>Iterator1</code>,
 <code>Iterator2</code>, and <code>Iterator3</code>.</td></tr><tr><td valign="top"><a href="#unfold-2">unfold/2</a></td><td>
 Construct a new iterator from a <code>Fun(AccIn)</code> function and an
-initial accumulator value <code>Acc0</code>.</td></tr><tr><td valign="top"><a href="#unzip-1">unzip/1</a></td><td>
+initial accumulator value <code>Acc0</code>.</td></tr><tr><td valign="top"><a href="#uniq-1">uniq/1</a></td><td>
+Returns an iterator containing the elements of Iterator1 with duplicated
+elements removed (preserving the order of the elements).</td></tr><tr><td valign="top"><a href="#uniq-2">uniq/2</a></td><td>
+Returns an iterator containing the elements of Iterator1 without the
+elements for which Fun returned duplicate values (preserving the
+order of the elements).</td></tr><tr><td valign="top"><a href="#unzip-1">unzip/1</a></td><td>
 "Unzips" a iterator of two-tuples into two iterators, where the
 first iterator contains the first element of each tuple, and the
 second iterator contains the second element of each tuple.</td></tr><tr><td valign="top"><a href="#unzip3-1">unzip3/1</a></td><td>
@@ -453,6 +470,74 @@ duplicate(N, Elem) -&gt; Iterator
 
 Returns an iterator containing `N` copies of term `Elem`. If `N` is
 `infinity` iterator will return infinite copies of `Elem`.
+
+<a name="enumerate-1"></a>
+
+### enumerate/1
+
+<pre><code>
+enumerate(Iterator1) -&gt; Iterator2
+</code></pre>
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>({Index, Elem})</code></li><li><code>Index = pos_integer()</code></li></ul>
+
+Returns elements of `Iterator1` with each element `H` replaced by a
+tuple of form `{I, H}` where `I` is the position of `H` in
+`Iterator1`. The enumeration starts with 1 and increases by 1
+in each step.
+
+That is, `enumerate/1` behaves as if it had been defined as
+follows, except that the iterator is not fully evaluated before
+elements are returned:
+
+```
+  enumerate(Iterator1) ->
+    {Iterator2, _ } = llists:mapfoldl(fun(T, Acc) -> {{Acc, T}, Acc+1} end, 1, Iterator1),
+    Iterator2.
+```
+
+Example:
+
+```
+> llists:to_list(
+     llists:enumerate(
+         llists:from_list([one, two, three]))).
+[{1,one},{2,two},{3,three}]
+```
+
+<a name="enumerate-2"></a>
+
+### enumerate/2
+
+<pre><code>
+enumerate(Index, Iterator1) -&gt; Iterator2
+</code></pre>
+
+<ul class="definitions"><li><code>Index = integer()</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>({Index, Elem})</code></li></ul>
+
+Returns elements of `Iterator1` with each element `H` replaced by a
+tuple of form `{I, H}` where `I` is the position of `H` in
+`Iterator1`. The enumeration starts with `Index` and increases by 1
+in each step.
+
+That is, `enumerate/1` behaves as if it had been defined as
+follows, except that the iterator is not fully evaluated before
+elements are returned:
+
+```
+  enumerate(Index, Iterator1) ->
+    {Iterator2, _ } = llists:mapfoldl(fun(T, Acc) -> {{Acc, T}, Acc+1} end, Index, Iterator1),
+    Iterator2.
+```
+
+Example:
+
+```
+> llists:to_list(
+     llists:enumerate(0,
+         llists:from_list([one, two, three]))).
+[{0,one},{1,two},{2,three}]
+```
 
 <a name="filter-2"></a>
 
@@ -664,7 +749,7 @@ list will be returned in order by the returned iterator.
 from_map(Map) -&gt; Iterator
 </code></pre>
 
-<ul class="definitions"><li><code>Map = <a href="maps.md#type-map">maps:map</a>(Key, Value)</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>({Key, Value})</code></li></ul>
+<ul class="definitions"><li><code>Map = <a href="/home/john/Local/stdlib/doc/maps.md#type-map">maps:map</a>(Key, Value)</code></li><li><code>Iterator = <a href="#type-iterator">iterator</a>({Key, Value})</code></li></ul>
 
 Construct a new iterator from an existing map. Each `{Key, Value}`
 tuple of the map will be returned in an arbitrary order by the
@@ -1554,7 +1639,7 @@ produced. Infinite iterators will never return.
 to_map(Iterator) -&gt; Map
 </code></pre>
 
-<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>({Key, Value})</code></li><li><code>Key = any()</code></li><li><code>Value = any()</code></li><li><code>Map = <a href="maps.md#type-map">maps:map</a>(Key, Value)</code></li></ul>
+<ul class="definitions"><li><code>Iterator = <a href="#type-iterator">iterator</a>({Key, Value})</code></li><li><code>Key = any()</code></li><li><code>Value = any()</code></li><li><code>Map = <a href="/home/john/Local/stdlib/doc/maps.md#type-map">maps:map</a>(Key, Value)</code></li></ul>
 
 Fully evaluate an `Iterator` of `{Key, Value}` tuples and return a
 map containing all pairs produced. Infinite iterators will never
@@ -1692,6 +1777,45 @@ the iterator, `Fun` will be invoked with the current accumulator to
 produce a value. `Fun` is expected to return a tuple of
 `{Elem, AccOut}`: the element to produce and the new accumulator
 value. If iteration is complete, `Fun` should return `none`.
+
+<a name="uniq-1"></a>
+
+### uniq/1
+
+<pre><code>
+uniq(Iterator1) -&gt; Iterator2
+</code></pre>
+
+<ul class="definitions"><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Elem = any()</code></li></ul>
+
+Returns an iterator containing the elements of Iterator1 with duplicated
+elements removed (preserving the order of the elements). The first
+occurrence of each element is kept.
+
+May require arbitrarily large quantities of memory to track all
+elements seen so far. If only duplicate elements remain, infinite
+iterators will never return.
+
+**See also:** [llist_utils:unique/1](llist_utils.md#unique-1).
+
+<a name="uniq-2"></a>
+
+### uniq/2
+
+<pre><code>
+uniq(Fun, Iterator1) -&gt; Iterator2
+</code></pre>
+
+<ul class="definitions"><li><code>Fun = <a href="#type-uniq">uniq</a>(Elem)</code></li><li><code>Iterator1 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Iterator2 = <a href="#type-iterator">iterator</a>(Elem)</code></li><li><code>Elem = any()</code></li></ul>
+
+Returns an iterator containing the elements of Iterator1 without the
+elements for which Fun returned duplicate values (preserving the
+order of the elements). The first occurrence of each element is
+kept.
+
+May require arbitrarily large quantities of memory to track all
+transformed elements seen so far. If only duplicate transformed
+elements remain, infinite iterators will never return.
 
 <a name="unzip-1"></a>
 

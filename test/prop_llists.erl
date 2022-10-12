@@ -128,6 +128,28 @@ prop_dropwhile() ->
         end
     ).
 
+prop_enumerate_1() ->
+    ?FORALL(
+        List,
+        list(),
+        llists:to_list(
+            llists:enumerate(
+                llists:from_list(List)
+            )
+        ) == lists:enumerate(List)
+    ).
+
+prop_enumerate_2() ->
+    ?FORALL(
+        {I, List},
+        {integer(), list()},
+        llists:to_list(
+            llists:enumerate(
+                I, llists:from_list(List)
+            )
+        ) == lists:enumerate(I, List)
+    ).
+
 prop_filter() ->
     ?FORALL(
         {Pred, List},
@@ -508,9 +530,9 @@ prop_subtract() ->
 
 % I'm unable to duplicate the undocumented behaviour for the unique
 % merge functions in list. They require both sorted and unique input,
-% and they behaviour when those are not present is fairly complicated.
-% As such, the following properties all restrict themselves to only
-% valid inputs.
+% and their behaviour when those are not present is fairly
+% complicated. As such, the following properties all restrict
+% themselves to only valid inputs.
 
 prop_ukeymerge() ->
     ?FORALL(
@@ -590,6 +612,38 @@ prop_umerge3() ->
             )
         ) ==
             lists:umerge3(List1, List2, List3)
+    ).
+
+prop_uniq_1() ->
+    ?FORALL(
+        List,
+        duplicates(),
+        llists:to_list(
+            llists:uniq(
+                llists:from_list(List)
+            )
+        ) ==
+            lists:uniq(List)
+    ).
+
+prop_uniq_2() ->
+    Uniq = fun
+        ({}) -> {};
+        (T) when is_tuple(T) -> {element(1, T)};
+        ([H | _Tail]) -> [H];
+        (N) when is_float(N) -> float(trunc(N));
+        (X) -> X
+    end,
+    ?FORALL(
+        List,
+        duplicates(),
+        llists:to_list(
+            llists:uniq(
+                Uniq,
+                llists:from_list(List)
+            )
+        ) ==
+            lists:uniq(Uniq, List)
     ).
 
 prop_unzip() ->
@@ -941,6 +995,12 @@ deep_list() ->
             {4, any()}
         ])
     ).
+
+duplicates() ->
+    frequency([
+        {1, ?LET(List, list(), List ++ List)},
+        {1, ?LET(List, list(), List)}
+    ]).
 
 key_list() ->
     key_list(any()).

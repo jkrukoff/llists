@@ -74,11 +74,12 @@
 -type mapfold(A, AccIn, B, AccOut) :: fun((A, AccIn) -> {B, AccOut}).
 -type predicate(Elem) :: fun((Elem) -> boolean()).
 -type unfold(Elem, AccIn, AccOut) :: fun((AccIn) -> {Elem, AccOut} | none).
+-type uniq(Elem) :: fun((Elem) -> any()).
 
 %% API
 
-% Iterator construction.
 -export([
+    % Iterator construction.
     is_iterator/1,
     from_list/1,
     from_map/1,
@@ -95,6 +96,8 @@
     delete/2,
     droplast/1,
     dropwhile/2,
+    enumerate/1,
+    enumerate/2,
     filter/2,
     filtermap/2,
     flatlength/1,
@@ -132,6 +135,8 @@
     umerge/2,
     umerge/3,
     umerge3/3,
+    uniq/1,
+    uniq/2,
     unzip/1,
     unzip3/1,
     usort/1,
@@ -507,6 +512,78 @@ dropwhile(Pred, #iterator{} = Iterator) when is_function(Pred, 1) ->
                 []
         end
     end).
+
+%% @doc
+%% Returns elements of `Iterator1' with each element `H' replaced by a
+%% tuple of form `{I, H}' where `I' is the position of `H' in
+%% `Iterator1'. The enumeration starts with 1 and increases by 1
+%% in each step.
+%%
+%% That is, `enumerate/1' behaves as if it had been defined as
+%% follows, except that the iterator is not fully evaluated before
+%% elements are returned:
+%%
+%% ```
+%% enumerate(Iterator1) ->
+%%   {Iterator2, _ } = llists:mapfoldl(fun(T, Acc) -> {{Acc, T}, Acc+1} end, 1, Iterator1),
+%%   Iterator2.
+%% ```
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%%      llists:enumerate(
+%%          llists:from_list([one, two, three]))).
+%% [{1,one},{2,two},{3,three}]
+%% '''
+%% @end
+-spec enumerate(Iterator1) -> Iterator2 when
+    Iterator1 :: iterator(Elem),
+    Iterator2 :: iterator({Index, Elem}),
+    Index :: pos_integer().
+enumerate(#iterator{} = Iterator) ->
+    enumerate(1, Iterator).
+
+%% @doc
+%% Returns elements of `Iterator1' with each element `H' replaced by a
+%% tuple of form `{I, H}' where `I' is the position of `H' in
+%% `Iterator1'. The enumeration starts with `Index' and increases by 1
+%% in each step.
+%%
+%% That is, `enumerate/1' behaves as if it had been defined as
+%% follows, except that the iterator is not fully evaluated before
+%% elements are returned:
+%%
+%% ```
+%% enumerate(Index, Iterator1) ->
+%%   {Iterator2, _ } = llists:mapfoldl(fun(T, Acc) -> {{Acc, T}, Acc+1} end, Index, Iterator1),
+%%   Iterator2.
+%% ```
+%%
+%% Example:
+%% ```
+%% > llists:to_list(
+%%      llists:enumerate(0,
+%%          llists:from_list([one, two, three]))).
+%% [{0,one},{1,two},{2,three}]
+%% '''
+%% @end
+-spec enumerate(Index, Iterator1) -> Iterator2 when
+    Index :: integer(),
+    Iterator1 :: iterator(Elem),
+    Iterator2 :: iterator({Index, Elem}).
+enumerate(Index, #iterator{} = Iterator) ->
+    unfold(
+        fun({I, FoldIterator}) ->
+            case next(FoldIterator) of
+                [] ->
+                    none;
+                [Elem | Next] ->
+                    {{I, Elem}, {I + 1, Next}}
+            end
+        end,
+        {Index, Iterator}
+    ).
 
 %% @doc
 %% `Filtered' is an iterator of all elements `Elem' in `Iterator1' for
@@ -1318,6 +1395,59 @@ umerge3(
     ufmerge([Iterator1, Iterator2, Iterator3]).
 
 %% @doc
+%% Returns an iterator containing the elements of Iterator1 with duplicated
+%% elements removed (preserving the order of the elements). The first
+%% occurrence of each element is kept.
+%%
+%% May require arbitrarily large quantities of memory to track all
+%% elements seen so far. If only duplicate elements remain, infinite
+%% iterators will never return.
+%% @end
+%% @see llist_utils:unique/1
+-spec uniq(Iterator1) -> Iterator2 when
+    Iterator1 :: iterator(Elem),
+    Iterator2 :: iterator(Elem),
+    Elem :: any().
+uniq(#iterator{} = Iterator) ->
+    uniq(fun(X) -> X end, Iterator).
+
+%% @doc
+%% Returns an iterator containing the elements of Iterator1 without the
+%% elements for which Fun returned duplicate values (preserving the
+%% order of the elements). The first occurrence of each element is
+%% kept.
+%%
+%% May require arbitrarily large quantities of memory to track all
+%% transformed elements seen so far. If only duplicate transformed
+%% elements remain, infinite iterators will never return.
+%% @end
+-spec uniq(Fun, Iterator1) -> Iterator2 when
+    Fun :: uniq(Elem),
+    Iterator1 :: iterator(Elem),
+    Iterator2 :: iterator(Elem),
+    Elem :: any().
+uniq(Fun, #iterator{} = Iterator) when is_function(Fun, 1) ->
+    unfold(
+        fun Next({#iterator{} = FoldIterator, Seen}) ->
+            case next(FoldIterator) of
+                [] ->
+                    none;
+                [Elem | #iterator{} = NextIterator] ->
+                    case Fun(Elem) of
+                        SeenElem when is_map_key(SeenElem, Seen) ->
+                            % If we have seen the element before, skip.
+                            Next({NextIterator, Seen});
+                        SeenElem ->
+                            % If we haven't seen the element before, return it
+                            % and add it to the seen elements map.
+                            {Elem, {NextIterator, Seen#{SeenElem => seen}}}
+                    end
+            end
+        end,
+        {Iterator, #{}}
+    ).
+
+%% @doc
 %% "Unzips" a iterator of two-tuples into two iterators, where the
 %% first iterator contains the first element of each tuple, and the
 %% second iterator contains the second element of each tuple.
@@ -1341,8 +1471,11 @@ unzip(#iterator{} = Iterator) ->
     Iterator3 :: iterator(B),
     Iterator4 :: iterator(C).
 unzip3(#iterator{} = Iterator) ->
-    {map(fun({A, _, _}) -> A end, Iterator), map(fun({_, B, _}) -> B end, Iterator),
-        map(fun({_, _, C}) -> C end, Iterator)}.
+    {
+        map(fun({A, _, _}) -> A end, Iterator),
+        map(fun({_, B, _}) -> B end, Iterator),
+        map(fun({_, _, C}) -> C end, Iterator)
+    }.
 
 %% @doc
 %% Returns a iterator containing the sorted elements of `Iterator1'
@@ -1973,9 +2106,9 @@ fmerge(IteratorOfIterators) ->
 fmerge(Compare, ListOfIterators) when is_function(Compare, 2) ->
     LazyLists = [
         Next
-        || Iterator <- ListOfIterators,
-           Next <- [next(Iterator)],
-           Next /= []
+     || Iterator <- ListOfIterators,
+        Next <- [next(Iterator)],
+        Next /= []
     ],
     unfold(
         fun
@@ -2043,9 +2176,9 @@ ufmerge(IteratorOfIterators) ->
 ufmerge(Equal, Compare, ListOfIterators) when is_function(Equal, 2), is_function(Compare, 2) ->
     LazyLists = [
         Next
-        || Iterator <- ListOfIterators,
-           Next <- [next(Iterator)],
-           Next /= []
+     || Iterator <- ListOfIterators,
+        Next <- [next(Iterator)],
+        Next /= []
     ],
     unfold(
         fun
@@ -2063,16 +2196,16 @@ ufmerge(Equal, Compare, ListOfIterators) when is_function(Equal, 2), is_function
 ufmerge_skip(Equal, Smallest, LazyLists) ->
     [
         LazyList
-        || [Elem | Iterator] <- LazyLists,
-           LazyList <- [
-               case Equal(Elem, Smallest) of
-                   true ->
-                       next(Iterator);
-                   false ->
-                       [Elem | Iterator]
-               end
-           ],
-           LazyList /= []
+     || [Elem | Iterator] <- LazyLists,
+        LazyList <- [
+            case Equal(Elem, Smallest) of
+                true ->
+                    next(Iterator);
+                false ->
+                    [Elem | Iterator]
+            end
+        ],
+        LazyList /= []
     ].
 
 nthtail_loop(0, #iterator{} = Iterator) ->

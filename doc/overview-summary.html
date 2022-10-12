@@ -8,8 +8,8 @@
 <body bgcolor="white">
 <div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
 <h1>llists</h1>
-<p>Copyright © 2021 John Krukoff</p>
-<p><b>Version:</b> 1.1.0</p>
+<p>Copyright © 2022 John Krukoff</p>
+<p><b>Version:</b> 1.2.0</p>
 <p><b>Authors:</b> John Krukoff (<a href="mailto:github@cultist.org"><tt>github@cultist.org</tt></a>).</p>
 <h2>Overview</h2>
 
@@ -46,6 +46,11 @@ functions in <code>llists</code> or <code>llists_utils</code>.</p>
 <code>lists</code> module, with guaranteed identical behaviour for side effect free and
 finite iterators.</p>
 
+<p><code>lfiles</code> contains file utility functions replicating functionality from the
+<code>file</code> and <code>io</code> modules. Read functions create impure iterators that should
+only be evaluated once. Write functions consume iterators and write the
+produced data to a file.</p>
+
 <h3>Iterators</h3>
 
 <p>An iterator is an opaque record created by the <code>llists</code> module to represent a
@@ -69,7 +74,7 @@ loading the entire file into memory during computation.</p>
 <p>First, we need to construct the iterator:</p>
 
 <pre>&gt; {ok, File} = file:open("doc/example.txt", [read]).
-{ok,&lt;0.160.0&gt;}
+{ok,&lt;0.227.0&gt;}
 &gt; I = llists:unfold(fun(File) -&gt;
 	case file:read_line(File) of
 		{ok, Data} -&gt;
@@ -79,7 +84,7 @@ loading the entire file into memory during computation.</p>
 			none
 	end
 end, File).
-{iterator,#Fun&lt;llists.2.51622540&gt;}</pre>
+{iterator,#Fun&lt;llists.2.38967554&gt;}</pre>
 
 <p>Next, a loop to parse the strings and calculate the mean difference:</p>
 
@@ -93,25 +98,31 @@ end, File).
 			Calculate(Next, Sum + (A - B), Count + 1)
 	end
 end.
-#Fun&lt;erl_eval.42.128620087&gt;
+#Fun&lt;erl_eval.17.3316493&gt;
 &gt; F(I, 0, 0).
 -0.42</pre>
 
-<p>We could also make use of the utility functions in <code>llists</code> and compose the
-same result as follows:</p>
+<p>We could also make use of the utility functions in <code>llists</code> and <code>lfiles</code> and
+compose the same result as follows:</p>
 
-<pre>&gt; Split = llists:map(fun (Elem) -&gt;
+<pre>&gt; {ok, File} = file:open("doc/example.txt", [read]).
+{ok,&lt;0.227.0&gt;}
+&gt; I = lfiles:read_line(File).
+{iterator,#Fun&lt;llists.2.38967554&gt;}
+&gt; Split = llists:map(fun (Elem) -&gt;
 	string:split(Elem, ",")
 end, I).
-{iterator,#Fun&lt;llists.23.51622540&gt;}
+{iterator,#Fun&lt;llists.23.38967554&gt;}
 &gt; Integers = llists:map(fun (Parts) -&gt;
 	[list_to_integer(string:trim(Part)) || Part &lt;- Parts]
 end, Split).
-{iterator,#Fun&lt;llists.23.51622540&gt;}
+{iterator,#Fun&lt;llists.23.38967554&gt;}
 &gt; {Sum, Count} = llists:foldl(fun ([A, B], {Sum, Count}) -&gt;
 	{Sum + (A - B), Count + 1}
 end, {0, 0}, Integers).
 {-42,100}
+&gt; file:close(File).
+ok
 &gt; Sum / Count.
 -0.42</pre>
 
@@ -119,7 +130,7 @@ end, {0, 0}, Integers).
 time.</p>
 
 <p>Notice that we couldn't use <code>llists:sum/1</code> and <code>llists:length/1</code> here instead
-of <code>llists:foldl/3</code>, since out input iterator has side effects and can only be
+of <code>llists:foldl/3</code>, since our input iterator has side effects and can only be
 evaluated once.</p>
 
 <h2>Contributing</h2>
@@ -130,7 +141,7 @@ master branch by GitHub actions or can be run locally via:</p>
 <pre>make deps
 make check</pre>
 
-<p>If a Unix environment is not availabe, tests can be run inside a docker
+<p>If a Unix environment is not available, tests can be run inside a docker
 container via:</p>
 
 <pre>docker-compose build

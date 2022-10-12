@@ -11,6 +11,34 @@
 %%% Tests
 %%%===================================================================
 
+no_unimplemented_lists_functions_test() ->
+    % Check that all exported functions of the lists module are
+    % implemented by llists, excepting the set of undocumented
+    % functions that are not intended to be used by end users.
+    UndocumentedExports = [
+        {rkeymerge, 3},
+        {rmerge, 2},
+        {rmerge, 3},
+        {rmerge3, 3},
+        {rukeymerge, 3},
+        {rumerge, 2},
+        {rumerge, 3},
+        {rumerge3, 3},
+        {zf, 2}
+    ],
+    ?assertEqual(
+        [],
+        sets:to_list(
+            sets:subtract(
+                sets:subtract(
+                    sets:from_list(lists:module_info(exports)),
+                    sets:from_list(UndocumentedExports)
+                ),
+                sets:from_list(llists:module_info(exports))
+            )
+        )
+    ).
+
 from_list_test() ->
     ?assertEqual(
         [1, 2, 3],
@@ -246,6 +274,27 @@ dropwhile_test() ->
             llists:dropwhile(
                 fun(Elem) -> Elem < 3 end,
                 llists:from_list([1, 2, 3, 4, 5])
+            )
+        )
+    ).
+
+enumerate_1_test() ->
+    ?assertEqual(
+        [{1, one}, {2, two}],
+        llists:to_list(
+            llists:enumerate(
+                llists:from_list([one, two])
+            )
+        )
+    ).
+
+enumerate_2_test() ->
+    ?assertEqual(
+        [{0, one}, {1, two}],
+        llists:to_list(
+            llists:enumerate(
+                0,
+                llists:from_list([one, two])
             )
         )
     ).
@@ -720,6 +769,27 @@ umerge3_test() ->
                 llists:from_list([1, 2, 5]),
                 llists:from_list([2, 4]),
                 llists:from_list([3, 4])
+            )
+        )
+    ).
+
+uniq_1_test() ->
+    ?assertEqual(
+        [1, 1.0, 2, 2.0, 3, 3.0],
+        llists:to_list(
+            llists:uniq(
+                llists:from_list([1, 1.0, 2, 2.0, 2, 3, 3.0, 2, 1])
+            )
+        )
+    ).
+
+uniq_2_test() ->
+    ?assertEqual(
+        [1, 2, 3],
+        llists:to_list(
+            llists:uniq(
+                fun trunc/1,
+                llists:from_list([1, 1.0, 2, 2.0, 2, 3, 3.0, 2, 1])
             )
         )
     ).

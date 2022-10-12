@@ -119,36 +119,14 @@ cycle(Iterator) ->
     true = llists:is_iterator(Iterator),
     llists:append(llists:duplicate(infinity, Iterator)).
 
-%% @doc
-%% Given an existing `Iterator1' creates a new `Iterator2' which
-%% returns each element of the original iterator as a tuple of the
-%% number of elements returned and the element itself.
-%%
-%% Example:
-%% ```
-%% > llists:to_list(
-%%      llists_utils:enumerate(
-%%          llits:from_list([one, two, three]))).
-%% [{1,one},{2,two},{3,three}]
-%% '''
-%% @end
+%% @deprecated Equivalent functionality is now present in {@link llists:enumerate/1}.
+%% @see llists:enumerate/1
 -spec enumerate(Iterator1) -> Iterator2 when
     Iterator1 :: llists:iterator(Elem),
     Iterator2 :: llists:iterator({Index, Elem}),
     Index :: pos_integer().
 enumerate(Iterator) ->
-    true = llists:is_iterator(Iterator),
-    llists:unfold(
-        fun({I, FoldIterator}) ->
-            case llists:next(FoldIterator) of
-                [] ->
-                    none;
-                [Elem | Next] ->
-                    {{I, Elem}, {I + 1, Next}}
-            end
-        end,
-        {1, Iterator}
-    ).
+    llists:enumerate(Iterator).
 
 %% @doc
 %% Create an iterator that returns groups of elements from `Iterator1'
@@ -293,7 +271,7 @@ random(N) when N >= 1 ->
     ).
 
 %% @doc
-%% As `unique/2', but with `==' as a equality function.
+%% As `unique/2', but with `==' as the equality function.
 %% @end
 %% @see unique/2
 -spec unique(Iterator1) -> Iterator2 when
@@ -307,7 +285,7 @@ unique(Iterator) ->
 %% Discards repeated values in a sorted iterator according to a
 %% provided equality function `Fun(A, B)' which should return `true'
 %% when `A' and `B' are equal and `false' otherwise. All values that
-%% compares equal to the previously returned value are skipped until a
+%% compare equal to the previously returned value are skipped until a
 %% non-equal value is found.
 %%
 %% Example:

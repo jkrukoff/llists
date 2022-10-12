@@ -1,14 +1,15 @@
 # llists
 
-Copyright (c) 2021 John Krukoff
+Copyright (c) 2022 John Krukoff
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 **Authors:** John Krukoff ([`github@cultist.org`](mailto:github@cultist.org)).
 
 ## Modules
 
 <table width="100%" border="0" summary="list of modules">
+<tr><td><a href="http://github.com/jkrukoff/llists/blob/master/doc/lfiles.md" class="module">lfiles</a></td></tr>
 <tr><td><a href="http://github.com/jkrukoff/llists/blob/master/doc/llists.md" class="module">llists</a></td></tr>
 <tr><td><a href="http://github.com/jkrukoff/llists/blob/master/doc/llists_utils.md" class="module">llists_utils</a></td></tr></table>
 
@@ -49,6 +50,11 @@ functions in `llists` or `llists_utils`.
 `lists` module, with guaranteed identical behaviour for side effect free and
 finite iterators.
 
+`lfiles` contains file utility functions replicating functionality from the
+`file` and `io` modules. Read functions create impure iterators that should
+only be evaluated once. Write functions consume iterators and write the
+produced data to a file.
+
 ### Iterators
 
 An iterator is an opaque record created by the `llists` module to represent a
@@ -72,7 +78,7 @@ First, we need to construct the iterator:
 
 ```
 > {ok, File} = file:open("doc/example.txt", [read]).
-{ok,<0.160.0>}
+{ok,<0.227.0>}
 > I = llists:unfold(fun(File) ->
 	case file:read_line(File) of
 		{ok, Data} ->
@@ -82,7 +88,7 @@ First, we need to construct the iterator:
 			none
 	end
 end, File).
-{iterator,#Fun<llists.2.51622540>}
+{iterator,#Fun<llists.2.38967554>}
 ```
 
 Next, a loop to parse the strings and calculate the mean difference:
@@ -98,27 +104,33 @@ Next, a loop to parse the strings and calculate the mean difference:
 			Calculate(Next, Sum + (A - B), Count + 1)
 	end
 end.
-#Fun<erl_eval.42.128620087>
+#Fun<erl_eval.17.3316493>
 > F(I, 0, 0).
 -0.42
 ```
 
-We could also make use of the utility functions in `llists` and compose the
-same result as follows:
+We could also make use of the utility functions in `llists` and `lfiles` and
+compose the same result as follows:
 
 ```
+> {ok, File} = file:open("doc/example.txt", [read]).
+{ok,<0.227.0>}
+> I = lfiles:read_line(File).
+{iterator,#Fun<llists.2.38967554>}
 > Split = llists:map(fun (Elem) ->
 	string:split(Elem, ",")
 end, I).
-{iterator,#Fun<llists.23.51622540>}
+{iterator,#Fun<llists.23.38967554>}
 > Integers = llists:map(fun (Parts) ->
 	[list_to_integer(string:trim(Part)) || Part <- Parts]
 end, Split).
-{iterator,#Fun<llists.23.51622540>}
+{iterator,#Fun<llists.23.38967554>}
 > {Sum, Count} = llists:foldl(fun ([A, B], {Sum, Count}) ->
 	{Sum + (A - B), Count + 1}
 end, {0, 0}, Integers).
 {-42,100}
+> file:close(File).
+ok
 > Sum / Count.
 -0.42
 ```
@@ -127,7 +139,7 @@ In both examples, we read only a single line of the file into memory at a
 time.
 
 Notice that we couldn't use `llists:sum/1` and `llists:length/1` here instead
-of `llists:foldl/3`, since out input iterator has side effects and can only be
+of `llists:foldl/3`, since our input iterator has side effects and can only be
 evaluated once.
 
 ## Contributing
@@ -140,7 +152,7 @@ make deps
 make check
 ```
 
-If a Unix environment is not availabe, tests can be run inside a docker
+If a Unix environment is not available, tests can be run inside a docker
 container via:
 
 ```
@@ -163,12 +175,12 @@ Earlier versions may work if functions involving maps are avoided.
 ## Lineage
 
 Streams and lazily evaluated lists are common language constructs and much
-prior art exists. Scheme's [SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.md) served as a
+prior art exists. Scheme's [SRFI-41](https://srfi.schemers.org/srfi-41/srfi-41.html) served as a
 useful design document to base this work on.
 
 Other implementations that were used for reference:
 
-- Elixir's standard library [Stream](https://hexdocs.pm/elixir/Stream.md) module.
+- Elixir's standard library [Stream](https://hexdocs.pm/elixir/Stream.html) module.
 
 - The Erlang stream module from the [Datum
   library](https://github.com/fogfish/datum/blob/master/src/stream/stream.erl).
@@ -177,4 +189,4 @@ Other implementations that were used for reference:
   library.
 
 - The [infinite
-  lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.md) example from the Erlang documentation.
+  lists](http://erlang.org/documentation/doc-5.8/doc/programming_examples/funs.html) example from the Erlang documentation.
