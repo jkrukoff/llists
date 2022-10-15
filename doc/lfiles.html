@@ -52,7 +52,7 @@ bytes/characters.</td></tr>
 <h3 class="function"><a name="get_chars-3">get_chars/3</a></h3>
 <div class="spec">
 <p><tt>get_chars(IODevice, Prompt, Number) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Prompt = <a href="/home/john/Local/stdlib/doc/io.html#type-prompt">io:prompt()</a></tt></li><li><tt>Number = non_neg_integer()</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | <a href="/home/john/Local/stdlib/doc/unicode.html#type-unicode_binary">unicode:unicode_binary()</a></tt></li></ul></p>
+<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Prompt = <a href="/home/john/Local/stdlib/doc/io.html#type-prompt">io:prompt()</a></tt></li><li><tt>Number = non_neg_integer()</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | <a href="/home/john/Local/stdlib/doc/unicode.html#type-unicode_binary">unicode:unicode_binary()</a></tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns chunks of <code>Number</code> characters from
@@ -65,7 +65,7 @@ bytes/characters.</td></tr>
 <h3 class="function"><a name="get_line-2">get_line/2</a></h3>
 <div class="spec">
 <p><tt>get_line(IODevice, Prompt) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Prompt = <a href="/home/john/Local/stdlib/doc/io.html#type-prompt">io:prompt()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | <a href="/home/john/Local/stdlib/doc/unicode.html#type-unicode_binary">unicode:unicode_binary()</a></tt></li></ul></p>
+<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Prompt = <a href="/home/john/Local/stdlib/doc/io.html#type-prompt">io:prompt()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | <a href="/home/john/Local/stdlib/doc/unicode.html#type-unicode_binary">unicode:unicode_binary()</a></tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns lines of data from a file
@@ -81,7 +81,7 @@ line.</p>
 <h3 class="function"><a name="put_chars-2">put_chars/2</a></h3>
 <div class="spec">
 <p><tt>put_chars(IODevice, Iterator) -&gt; ok</tt>
-<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(<a href="/home/john/Local/stdlib/doc/unicode.html#type-chardata">unicode:chardata()</a>)</tt></li></ul></p>
+<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(<a href="/home/john/Local/stdlib/doc/unicode.html#type-chardata">unicode:chardata()</a>)</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Fully evaluate <code>Iterator</code> and write the characters returned to the
@@ -94,7 +94,7 @@ line.</p>
 <h3 class="function"><a name="read-2">read/2</a></h3>
 <div class="spec">
 <p><tt>read(IODevice, Number) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Number = non_neg_integer()</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | binary()</tt></li></ul></p>
+<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Number = non_neg_integer()</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | binary()</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns chunks of data from a file
@@ -108,7 +108,7 @@ bytes/characters.</p>
 <h3 class="function"><a name="read_line-1">read_line/1</a></h3>
 <div class="spec">
 <p><tt>read_line(IODevice) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | binary()</tt></li></ul></p>
+<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | binary()</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns lines of data from a file
@@ -124,7 +124,7 @@ line.</p>
 <h3 class="function"><a name="write-2">write/2</a></h3>
 <div class="spec">
 <p><tt>write(IODevice, Iterator) -&gt; ok | {error, Reason}</tt>
-<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(<a href="/home/john/Local/kernel/doc/file.html#type-io_data">file:io_data()</a>)</tt></li><li><tt>Reason = <a href="/home/john/Local/kernel/doc/file.html#type-posix">file:posix()</a> | badarg | terminated</tt></li></ul></p>
+<ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(<a href="/home/john/Local/kernel/doc/file.html#type-io_data">file:io_data()</a>)</tt></li><li><tt>Reason = <a href="/home/john/Local/kernel/doc/file.html#type-posix">file:posix()</a> | badarg | terminated</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Fully evaluate <code>Iterator</code> and write the bytes returned to the file

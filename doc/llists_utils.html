@@ -72,7 +72,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="choice-1">choice/1</a></h3>
 <div class="spec">
 <p><tt>choice(Choices) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>Choices = [Elem, ...]</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
+<ul class="definitions"><li><tt>Choices = [Elem, ...]</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
 <p> </p>
 </div><p>
   Create an infinite iterator that returns random elements from the
@@ -82,7 +82,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="combinations-2">combinations/2</a></h3>
 <div class="spec">
 <p><tt>combinations(N, Choices) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
 <p> </p>
 </div>
 <p><b>See also:</b> <a href="#combinations-3">combinations/3</a>.</p>
@@ -90,7 +90,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="combinations-3">combinations/3</a></h3>
 <div class="spec">
 <p><tt>combinations(N, Choices, Options) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Options = <a href="#type-permutation_options">permutation_options()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Options = <a href="#type-permutation_options">permutation_options()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns all combinations of elements from
@@ -112,7 +112,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="cycle-1">cycle/1</a></h3>
 <div class="spec">
 <p><tt>cycle(Iterator1) -&gt; Iterator2</tt>
-<ul class="definitions"><li><tt>Iterator1 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
+<ul class="definitions"><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
 <p> </p>
 </div><p>
   Create an infinite iterator that repeatedly returns the sequence of
@@ -121,7 +121,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="enumerate-1">enumerate/1</a></h3>
 <div class="spec">
 <p><tt>enumerate(Iterator1) -&gt; Iterator2</tt>
-<ul class="definitions"><li><tt>Iterator1 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>({Index, Elem})</tt></li><li><tt>Index = pos_integer()</tt></li></ul></p>
+<ul class="definitions"><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>({Index, Elem})</tt></li><li><tt>Index = pos_integer()</tt></li></ul></p>
 <p> </p>
 </div><p><b>This function is deprecated:</b> Equivalent functionality is now present in <a docgen-rel="seemfa" docgen-href="llists#enumerate/1" href="llists.html#enumerate-1"><code>llists:enumerate/1</code></a>.</p>
 
@@ -130,7 +130,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="group-2">group/2</a></h3>
 <div class="spec">
 <p><tt>group(Length, Iterator1) -&gt; Iterator2</tt>
-<ul class="definitions"><li><tt>Length = pos_integer()</tt></li><li><tt>Iterator1 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+<ul class="definitions"><li><tt>Length = pos_integer()</tt></li><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns groups of elements from <code>Iterator1</code>
@@ -149,7 +149,7 @@ any future name clashes with additions to the stdlib.</p>
 <h3 class="function"><a name="groupwith-2">groupwith/2</a></h3>
 <div class="spec">
 <p><tt>groupwith(Pred, Iterator1) -&gt; Iterator2</tt>
-<ul class="definitions"><li><tt>Pred = <a href="/home/john/Local/llists/doc/llists.html#type-predicate">llists:predicate</a>(Elem)</tt></li><li><tt>Iterator1 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+<ul class="definitions"><li><tt>Pred = <a href="llists.html#type-predicate">llists:predicate</a>(Elem)</tt></li><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns groups of elements from <code>Iterator1</code>
@@ -173,7 +173,7 @@ still be returned.</p>
 <h3 class="function"><a name="permutations-2">permutations/2</a></h3>
 <div class="spec">
 <p><tt>permutations(N, Choices) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
 <p> </p>
 </div>
 <p><b>See also:</b> <a href="#permutations-3">permutations/3</a>.</p>
@@ -181,7 +181,7 @@ still be returned.</p>
 <h3 class="function"><a name="permutations-3">permutations/3</a></h3>
 <div class="spec">
 <p><tt>permutations(N, Choices, Options) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Options = <a href="#type-permutation_options">permutation_options()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
+<ul class="definitions"><li><tt>N = non_neg_integer()</tt></li><li><tt>Choices = [Elem]</tt></li><li><tt>Options = <a href="#type-permutation_options">permutation_options()</a></tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>([Elem])</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Create an iterator that returns all permutations of elements from
@@ -203,7 +203,7 @@ still be returned.</p>
 <h3 class="function"><a name="random-0">random/0</a></h3>
 <div class="spec">
 <p><tt>random() -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(float())</tt></li></ul></p>
+<ul class="definitions"><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(float())</tt></li></ul></p>
 <p> </p>
 </div><p>
   Create an infinite iterator that returns random floats in the range
@@ -214,7 +214,7 @@ still be returned.</p>
 <h3 class="function"><a name="random-1">random/1</a></h3>
 <div class="spec">
 <p><tt>random(N) -&gt; Iterator</tt>
-<ul class="definitions"><li><tt>N = pos_integer()</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(float())</tt></li></ul></p>
+<ul class="definitions"><li><tt>N = pos_integer()</tt></li><li><tt>Iterator = <a href="llists.html#type-iterator">llists:iterator</a>(float())</tt></li></ul></p>
 <p> </p>
 </div><p>
   Create an infinite iterator that returns random integers in the range
@@ -225,7 +225,7 @@ still be returned.</p>
 <h3 class="function"><a name="unique-1">unique/1</a></h3>
 <div class="spec">
 <p><tt>unique(Iterator1) -&gt; Iterator2</tt>
-<ul class="definitions"><li><tt>Iterator1 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
+<ul class="definitions"><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li></ul></p>
 <p> </p>
 </div><p>
   As <code>unique/2</code>, but with <code>==</code> as the equality function.</p>
@@ -234,7 +234,7 @@ still be returned.</p>
 <h3 class="function"><a name="unique-2">unique/2</a></h3>
 <div class="spec">
 <p><tt>unique(Fun, Iterator1) -&gt; Iterator2</tt>
-<ul class="definitions"><li><tt>Fun = <a href="/home/john/Local/llists/doc/llists.html#type-compare">llists:compare</a>(A, B)</tt></li><li><tt>Iterator1 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>A = Elem</tt></li><li><tt>B = Elem</tt></li></ul></p>
+<ul class="definitions"><li><tt>Fun = <a href="llists.html#type-compare">llists:compare</a>(A, B)</tt></li><li><tt>Iterator1 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>Iterator2 = <a href="llists.html#type-iterator">llists:iterator</a>(Elem)</tt></li><li><tt>A = Elem</tt></li><li><tt>B = Elem</tt></li></ul></p>
 <p> </p>
 </div><p><p>
   Discards repeated values in a sorted iterator according to a

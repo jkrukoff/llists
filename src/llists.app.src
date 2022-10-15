@@ -9,7 +9,7 @@
     {modules, [lfiles, llists, llists_utils]},
     {registered, []},
     {env, []},
-    {licenses, ["Apache 2.0"]},
+    {licenses, ["Apache-2.0"]},
     {links, [{"GitHub", "https://github.com/jkrukoff/llists"}]},
     {extra, [{maintainers, ["John Krukoff"]}]}
 ]}.
