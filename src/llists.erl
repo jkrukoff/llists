@@ -1403,7 +1403,7 @@ umerge3(
 %% elements seen so far. If only duplicate elements remain, infinite
 %% iterators will never return.
 %% @end
-%% @see llist_utils:unique/1
+%% @see llists_utils:unique/1
 -spec uniq(Iterator1) -> Iterator2 when
     Iterator1 :: iterator(Elem),
     Iterator2 :: iterator(Elem),

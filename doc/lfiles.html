@@ -26,12 +26,25 @@ them impure. As such, they should only be evaluated once.</p>
    evaluated, this module expects the lifecycle of the opened file
    process to be managed by the caller.
 <h2><a name="index">Function Index</a></h2>
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#get_chars-3">get_chars/3</a></td><td></td></tr>
-<tr><td valign="top"><a href="#get_line-2">get_line/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#put_chars-2">put_chars/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#read-2">read/2</a></td><td></td></tr>
-<tr><td valign="top"><a href="#read_line-1">read_line/1</a></td><td></td></tr>
-<tr><td valign="top"><a href="#write-2">write/2</a></td><td></td></tr>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#get_chars-3">get_chars/3</a></td><td>
+  Create an iterator that returns chunks of <code>Number</code> characters from
+  <code>IODevice</code>, prompting each read with <code>Prompt</code>.</td></tr>
+<tr><td valign="top"><a href="#get_line-2">get_line/2</a></td><td>
+  Create an iterator that returns lines of data from a file
+  referenced by <code>IODevice</code>, prompting each read with <code>Prompt</code>.</td></tr>
+<tr><td valign="top"><a href="#put_chars-2">put_chars/2</a></td><td>
+  Fully evaluate <code>Iterator</code> and write the characters returned to the
+  file referenced by <code>IODevice</code>.</td></tr>
+<tr><td valign="top"><a href="#read-2">read/2</a></td><td>
+  Create an iterator that returns chunks of data from a file
+  referenced by <code>IODevice</code> of approximately <code>Number</code>  
+bytes/characters.</td></tr>
+<tr><td valign="top"><a href="#read_line-1">read_line/1</a></td><td>
+  Create an iterator that returns lines of data from a file
+  referenced by <code>IODevice</code>.</td></tr>
+<tr><td valign="top"><a href="#write-2">write/2</a></td><td>
+  Fully evaluate <code>Iterator</code> and write the bytes returned to the file
+  referenced by <code>IODevice</code>.</td></tr>
 </table>
 
 <h2><a name="functions">Function Details</a></h2>
@@ -41,42 +54,88 @@ them impure. As such, they should only be evaluated once.</p>
 <p><tt>get_chars(IODevice, Prompt, Number) -&gt; Iterator</tt>
 <ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Prompt = <a href="/home/john/Local/stdlib/doc/io.html#type-prompt">io:prompt()</a></tt></li><li><tt>Number = non_neg_integer()</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | <a href="/home/john/Local/stdlib/doc/unicode.html#type-unicode_binary">unicode:unicode_binary()</a></tt></li></ul></p>
 <p> </p>
-</div>
+</div><p><p>
+  Create an iterator that returns chunks of <code>Number</code> characters from
+  <code>IODevice</code>, prompting each read with <code>Prompt</code>.</p>
+ 
+  If the get_chars call fails, an error of form
+  <code>{io_read_error, Reason}</code> will be thrown by the iterator.</p>
+<p><b>See also:</b> <a href="io.html#get_chars-3">io:get_chars/3</a>.</p>
 
 <h3 class="function"><a name="get_line-2">get_line/2</a></h3>
 <div class="spec">
 <p><tt>get_line(IODevice, Prompt) -&gt; Iterator</tt>
 <ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Prompt = <a href="/home/john/Local/stdlib/doc/io.html#type-prompt">io:prompt()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | <a href="/home/john/Local/stdlib/doc/unicode.html#type-unicode_binary">unicode:unicode_binary()</a></tt></li></ul></p>
 <p> </p>
-</div>
+</div><p><p>
+  Create an iterator that returns lines of data from a file
+  referenced by <code>IODevice</code>, prompting each read with <code>Prompt</code>.</p>
+ 
+  <p>The trailing linefeed (<code>\n</code>) character is returned as part of the  
+line.</p>
+ 
+  If the get_line call fails, an error of form
+  <code>{io_read_error, Reason}</code> will be thrown by the iterator.</p>
+<p><b>See also:</b> <a href="io.html#get_line-2">io:get_line/2</a>.</p>
 
 <h3 class="function"><a name="put_chars-2">put_chars/2</a></h3>
 <div class="spec">
 <p><tt>put_chars(IODevice, Iterator) -&gt; ok</tt>
 <ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(<a href="/home/john/Local/stdlib/doc/unicode.html#type-chardata">unicode:chardata()</a>)</tt></li></ul></p>
 <p> </p>
-</div>
+</div><p><p>
+  Fully evaluate <code>Iterator</code> and write the characters returned to the
+  file referenced by <code>IODevice</code>.</p>
+ 
+  The iterator will be fully evaluated, infinite iterators will never
+  return (or will fill up the disk and error!).</p>
+<p><b>See also:</b> <a href="io.html#put_chars-2">io:put_chars/2</a>.</p>
 
 <h3 class="function"><a name="read-2">read/2</a></h3>
 <div class="spec">
 <p><tt>read(IODevice, Number) -&gt; Iterator</tt>
 <ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Number = non_neg_integer()</tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | binary()</tt></li></ul></p>
 <p> </p>
-</div>
+</div><p><p>
+  Create an iterator that returns chunks of data from a file
+  referenced by <code>IODevice</code> of approximately <code>Number</code>  
+bytes/characters.</p>
+ 
+  If the read fails, an error of form <code>{file_read_error, Reason}</code>
+  will be thrown by the iterator.</p>
+<p><b>See also:</b> <a href="file.html#read-2">file:read/2</a>.</p>
 
 <h3 class="function"><a name="read_line-1">read_line/1</a></h3>
 <div class="spec">
 <p><tt>read_line(IODevice) -&gt; Iterator</tt>
 <ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(Data)</tt></li><li><tt>Data = string() | binary()</tt></li></ul></p>
 <p> </p>
-</div>
+</div><p><p>
+  Create an iterator that returns lines of data from a file
+  referenced by <code>IODevice</code>.</p>
+ 
+  <p>The trailing linefeed (<code>\n</code>) character is returned as part of the  
+line.</p>
+ 
+  If the read fails, an error of form <code>{file_read_error, Reason}</code>
+  will be thrown by the iterator.</p>
+<p><b>See also:</b> <a href="file.html#read_line-1">file:read_line/1</a>.</p>
 
 <h3 class="function"><a name="write-2">write/2</a></h3>
 <div class="spec">
 <p><tt>write(IODevice, Iterator) -&gt; ok | {error, Reason}</tt>
 <ul class="definitions"><li><tt>IODevice = <a href="/home/john/Local/kernel/doc/file.html#type-io_device">file:io_device()</a></tt></li><li><tt>Iterator = <a href="/home/john/Local/llists/doc/llists.html#type-iterator">llists:iterator</a>(<a href="/home/john/Local/kernel/doc/file.html#type-io_data">file:io_data()</a>)</tt></li><li><tt>Reason = <a href="/home/john/Local/kernel/doc/file.html#type-posix">file:posix()</a> | badarg | terminated</tt></li></ul></p>
 <p> </p>
-</div>
+</div><p><p>
+  Fully evaluate <code>Iterator</code> and write the bytes returned to the file
+  referenced by <code>IODevice</code>.</p>
+ 
+  <p><code>ok</code> is returned on success, but if the write fails an error of
+  form <code>{error, Reason}</code> will be returned.</p>
+ 
+  The iterator will be fully evaluated, infinite iterators will never
+  return (or will fill up the disk and error!).</p>
+<p><b>See also:</b> <a href="file.html#write-2">file:write/2</a>.</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>

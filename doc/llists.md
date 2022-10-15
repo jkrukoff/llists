@@ -1796,7 +1796,7 @@ May require arbitrarily large quantities of memory to track all
 elements seen so far. If only duplicate elements remain, infinite
 iterators will never return.
 
-**See also:** [llist_utils:unique/1](llist_utils.md#unique-1).
+**See also:** [llists_utils:unique/1](llists_utils.md#unique-1).
 
 <a name="uniq-2"></a>
 

@@ -32,7 +32,14 @@
 %%%===================================================================
 
 %% @doc
+%% Create an iterator that returns chunks of data from a file
+%% referenced by `IODevice' of approximately `Number'
+%% bytes/characters.
+%%
+%% If the read fails, an error of form `{file_read_error, Reason}'
+%% will be thrown by the iterator.
 %% @end
+%% @see file:read/2
 -spec read(IODevice, Number) -> Iterator when
     IODevice :: file:io_device(),
     Number :: non_neg_integer(),
@@ -41,6 +48,14 @@
 read(IODevice, Number) ->
     file_read_iterator(fun() -> file:read(IODevice, Number) end).
 
+%% @doc
+%% Create an iterator that returns chunks of `Number' characters from
+%% `IODevice', prompting each read with `Prompt'.
+%%
+%% If the get_chars call fails, an error of form
+%% `{io_read_error, Reason}' will be thrown by the iterator.
+%% @end
+%% @see io:get_chars/3
 -spec get_chars(IODevice, Prompt, Number) -> Iterator when
     IODevice :: file:io_device(),
     Prompt :: io:prompt(),
@@ -50,6 +65,17 @@ read(IODevice, Number) ->
 get_chars(IODevice, Prompt, Number) ->
     io_read_iterator(fun() -> io:get_chars(IODevice, Prompt, Number) end).
 
+%% @doc
+%% Create an iterator that returns lines of data from a file
+%% referenced by `IODevice'.
+%%
+%% The trailing linefeed (`\n') character is returned as part of the
+%% line.
+%%
+%% If the read fails, an error of form `{file_read_error, Reason}'
+%% will be thrown by the iterator.
+%% @end
+%% @see file:read_line/1
 -spec read_line(IODevice) -> Iterator when
     IODevice :: file:io_device(),
     Iterator :: llists:iterator(Data),
@@ -57,6 +83,17 @@ get_chars(IODevice, Prompt, Number) ->
 read_line(IODevice) ->
     file_read_iterator(fun() -> file:read_line(IODevice) end).
 
+%% @doc
+%% Create an iterator that returns lines of data from a file
+%% referenced by `IODevice', prompting each read with `Prompt'.
+%%
+%% The trailing linefeed (`\n') character is returned as part of the
+%% line.
+%%
+%% If the get_line call fails, an error of form
+%% `{io_read_error, Reason}' will be thrown by the iterator.
+%% @end
+%% @see io:get_line/2
 -spec get_line(IODevice, Prompt) -> Iterator when
     IODevice :: file:io_device(),
     Prompt :: io:prompt(),
@@ -65,8 +102,17 @@ read_line(IODevice) ->
 get_line(IODevice, Prompt) ->
     io_read_iterator(fun() -> io:get_line(IODevice, Prompt) end).
 
+%% @doc
+%% Fully evaluate `Iterator' and write the bytes returned to the file
+%% referenced by `IODevice'.
+%%
+%% `ok' is returned on success, but if the write fails an error of
+%% form `{error, Reason}' will be returned.
+%%
 %% The iterator will be fully evaluated, infinite iterators will never
-%% return.
+%% return (or will fill up the disk and error!).
+%% @end
+%% @see file:write/2
 -spec write(IODevice, Iterator) -> ok | {error, Reason} when
     IODevice :: file:io_device(),
     Iterator :: llists:iterator(file:io_data()),
@@ -75,8 +121,14 @@ write(IODevice, Iterator) ->
     true = llists:is_iterator(Iterator),
     write_loop(IODevice, llists:next(Iterator), ok).
 
+%% @doc
+%% Fully evaluate `Iterator' and write the characters returned to the
+%% file referenced by `IODevice'.
+%%
 %% The iterator will be fully evaluated, infinite iterators will never
-%% return.
+%% return (or will fill up the disk and error!).
+%% @end
+%% @see io:put_chars/2
 -spec put_chars(IODevice, Iterator) -> ok when
     IODevice :: file:io_device(),
     Iterator :: llists:iterator(unicode:chardata()).
